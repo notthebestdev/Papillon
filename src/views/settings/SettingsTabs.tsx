@@ -82,84 +82,61 @@ const SettingsTabs = () => {
   const safeTabs = ["Home"];
 
   const [tabs, setTabs] = useState(defaultTabs);
+  const [hideTabTitles, setHideTabTitles] = useState(false);
+  const [showTabBackground, setShowTabBackground] = useState(false);
+  const [failAnimation, setFailAnimation] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const toggleTab = (tab: string) => {
-    if (tabs.filter(t => t.enabled).length === 5 && !tabs.find(t => t.tab === tab)?.enabled) {
+    const enabledTabsCount = tabs.filter(t => t.enabled).length;
+    const isTabEnabled = tabs.find(t => t.tab === tab)?.enabled;
+
+    if (enabledTabsCount === 5 && !isTabEnabled) {
       playFailAnimation();
       return;
     }
 
-    const newTabs = [...tabs];
-    const index = newTabs.findIndex(t => t.tab === tab);
-
-    if (index !== -1 && !safeTabs.includes(tab)) {
-      newTabs[index].enabled = !newTabs[index].enabled;
-      setTabs(newTabs);
-    }
+    const newTabs = tabs.map(t =>
+      t.tab === tab && !safeTabs.includes(tab)
+        ? { ...t, enabled: !t.enabled }
+        : t
+    );
+    setTabs(newTabs);
   };
 
-  useEffect(() => {
-    const newTabs = [...tabs];
-    const homeIndex = newTabs.findIndex(tab => tab.tab === "Home");
-
-    // Ensure Home is among first 5 tabs
-    if (homeIndex > 4) {
-      const homeTab = newTabs.splice(homeIndex, 1)[0];
-      newTabs.splice(4, 0, homeTab);
-    }
-
-    if (homeIndex > 4) {
+  useLayoutEffect(() => {
+    if (account.personalization?.tabs) {
+      const storedTabs = account.personalization.tabs;
+      const newTabs = defaultTabs.map(defaultTab => {
+        const storedTab = storedTabs.find(t => t.name === defaultTab.tab);
+        return {
+          ...defaultTab,
+          enabled: storedTab ? storedTab.enabled : defaultTab.enabled,
+          installed: storedTab ? storedTab.installed : defaultTab.installed,
+        };
+      });
       setTabs(newTabs);
+    } else {
+      setTabs(defaultTabs);
     }
-  }, [tabs]);
+
+    setHideTabTitles(account.personalization?.hideTabTitles ?? false);
+    setShowTabBackground(account.personalization?.showTabBackground ?? false);
+  }, []);
 
   useEffect(() => {
     mutateProperty("personalization", {
       ...account.personalization,
       tabs: tabs.map(({ tab, enabled, installed }) => ({ name: tab, enabled, installed })),
+      hideTabTitles,
+      showTabBackground,
     });
-  }, [tabs]);
-
-  const [hideTabTitles, setHideTabTitles] = useState(false);
-  const [showTabBackground, setShowTabBackground] = useState(false);
-
-  useEffect(() => {
-    mutateProperty("personalization", {
-      ...account.personalization,
-      hideTabTitles : hideTabTitles,
-      showTabBackground: showTabBackground,
-    });
-  }, [hideTabTitles, showTabBackground]);
-
-  useLayoutEffect(() => {
-    if (account.personalization.tabs) {
-      const new_tabs = account.personalization.tabs.map(personalizationTab => ({
-        ...tabs.find(t => t.tab === personalizationTab.name)!,
-        enabled: personalizationTab.enabled,
-      }));
-
-      setTabs(new_tabs);
-    }
-    else {
-      setTabs(defaultTabs);
-      mutateProperty("personalization", {
-        ...account.personalization,
-        tabs: defaultTabs.map(({ tab, enabled }) => ({ name: tab, enabled })),
-      });
-    }
-
-    setHideTabTitles(account.personalization.hideTabTitles ?? false);
-    setShowTabBackground(account.personalization.showTabBackground ?? false);
-  }, []);
-
-  const [failAnimation, setFailAnimation] = useState(false);
+  }, [tabs, hideTabTitles, showTabBackground]);
 
   const playFailAnimation = () => {
     setFailAnimation(true);
     setTimeout(() => setFailAnimation(false), 300);
   };
-
-  const [previewIndex, setPreviewIndex] = useState(0);
 
   return (
     <View>

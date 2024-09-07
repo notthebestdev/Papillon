@@ -26,9 +26,9 @@ const defaultPersonalization = async (instance: pronote.SessionHandle): Promise<
       ? await downloadAsBase64(user.profilePicture.url)
       : void 0,
 
-    tabs: defaultTabs.filter(current => defaultPronoteTabs.includes(current.tab)).map((tab, index) => ({
+    tabs: defaultTabs.map((tab, index) => ({
       name: tab.tab,
-      enabled: index <= 4
+      enabled: defaultPronoteTabs.includes(tab.tab) && index <= 4
     }))
   };
 };
