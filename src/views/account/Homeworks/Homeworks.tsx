@@ -16,10 +16,12 @@ import {debounce} from "lodash";
 import {dateToEpochWeekNumber, epochWNToDate} from "@/utils/epochWeekNumber";
 import InfinitePager from "react-native-infinite-pager";
 import BottomSheet from "@/components/Modals/PapillonBottomSheet";
-import {Calendar, ChevronLeft, Cog, Eye} from "lucide-react-native";
+import {ChevronLeft, Cog, Eye, CalendarIcon} from "lucide-react-native";
 import {PressableScale} from "react-native-pressable-scale";
 import Reanimated, {useSharedValue, withSpring} from "react-native-reanimated";
-import RNDateTimePicker from "@react-native-community/datetimepicker";
+import {Calendar} from "react-native-calendars";
+import {CalendarList} from "react-native-calendars/src";
+import {MarkedDates} from "react-native-calendars/src/types";
 
 
 // Types pour les props du composant HomeworkList
@@ -170,6 +172,7 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [showCheckedHomeworks, setShowCheckedHomeworks] = useState<boolean>(true);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [selectedWeek, setSelectedWeek] = useState({});
 
   //Animation value
   const translateX = useSharedValue(0);
@@ -192,7 +195,7 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
         epochWeekNumber={epochWeekNumber}
         oldPageIndex={epochWeekNumber}
         showPicker={() => {
-          Platform.OS === "ios" && setShowDatePicker(true);
+          setShowDatePicker(true);
         }}
         changeIndex={(index: number) => manuallyChangeWeek(index)}
       />
@@ -225,6 +228,34 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
     debouncedUpdateHomeworks();
   }, [navigation, account.instance, epochWeekNumber]);
 
+  useEffect(() => {
+    let date = epochWNToDate(epochWeekNumber);
+    date.setDate(date.getDate() - date.getDay() + 1);
+    let selected: MarkedDates = {};
+    for (let i = 0; i < 7; i++) {
+      let date_string: string = date.toISOString().split("T")[0];
+      selected[date_string] = {
+
+        customStyles: {
+          container: {
+            backfaceVisibility: "visible",
+            backgroundColor: theme.colors.primary + "20",
+            borderTopLeftRadius: i === 0 ? 100 : 0,
+            borderTopRightRadius: i === 6 ? 100 : 0,
+            borderBottomLeftRadius: i === 0 ? 100 : 0,
+            borderBottomRightRadius: i === 6 ? 100 : 0,
+            width: "100%",
+          },
+          text: {
+            color: theme.colors.primary
+          }
+        }
+      };
+      date.setDate(date.getDate() + 1);
+    }
+    setSelectedWeek(selected);
+  }, [epochWeekNumber]);
+
   return (
     <View
       style={{
@@ -248,7 +279,7 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
               gap: 10,
               alignItems: "center"
             }}>
-              <Calendar size={24} color={theme.colors.text}/>
+              <CalendarIcon size={24} color={theme.colors.text}/>
               <View>
                 <NativeText variant={"overtitle"}>
                   Sélection de la semaine
@@ -266,17 +297,39 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
                 <Cog size={24} color={"#999"}/>
               </PressableScale>
             </View>
-            <View style={{paddingHorizontal: 16}}>
-              <RNDateTimePicker
-                value={epochWNToDate(epochWeekNumber)}
-                mode={"date"}
-                display={"inline"}
-                accentColor={theme.colors.primary}
-                onChange={(_event, date) => {
-                  if (date) {
-                    setShowDatePicker(false);
-                    manuallyChangeWeek(dateToEpochWeekNumber(date));
-                  }
+            <View style={{}}>
+              <CalendarList
+                horizontal={true}
+                pagingEnabled={true}
+                calendarWidth={Dimensions.get("screen").width}
+                staticHeader={true}
+                markingType={"custom"}
+                markedDates={selectedWeek}
+                onDayPress={(day) => {
+                  setEpochWeekNumber(dateToEpochWeekNumber(new Date(day.dateString)));
+                  setShowDatePicker(true);
+                }}
+                initialDate={epochWNToDate(epochWeekNumber)}
+                firstDay={1}
+                theme={{
+                  backgroundColor: theme.colors.primary,
+                  calendarBackground: theme.colors.background,
+                  textSectionTitleColor: theme.colors.text,
+                  textSectionTitleDisabledColor: theme.colors.text + "80",
+                  selectedDayBackgroundColor: theme.colors.primary,
+                  selectedDayTextColor: "#FFF",
+                  todayTextColor: theme.colors.primary,
+                  dayTextColor: theme.colors.text,
+                  textDisabledColor: theme.colors.text + "80",
+                  arrowColor: theme.colors.primary,
+                  disabledArrowColor: theme.colors.text + "80",
+                  monthTextColor: theme.colors.text,
+                  textDayFontFamily: "regular",
+                  textMonthFontFamily: "semibold",
+                  textDayHeaderFontFamily: "light",
+                  textDayFontSize: 16,
+                  textMonthFontSize: 17,
+                  textDayHeaderFontSize: 15
                 }}
               />
             </View>
