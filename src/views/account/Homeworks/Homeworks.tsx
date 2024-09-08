@@ -1,27 +1,33 @@
-import { useTheme } from "@react-navigation/native";
-import React, { useEffect, useRef, useCallback, useLayoutEffect, useMemo, useState } from "react";
-import { View, ScrollView,Text } from "react-native";
-import { Screen } from "@/router/helpers/types";
-import { toggleHomeworkState, updateHomeworkForWeekInCache } from "@/services/homework";
-import { useHomeworkStore } from "@/stores/homework";
-import { useCurrentAccount } from "@/stores/account";
-import { HeaderCalendar } from "./HomeworksHeader";
+import {useTheme} from "@react-navigation/native";
+import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {Dimensions, Platform, ScrollView, Switch, Text, View} from "react-native";
+import {Screen} from "@/router/helpers/types";
+import {toggleHomeworkState, updateHomeworkForWeekInCache} from "@/services/homework";
+import {useHomeworkStore} from "@/stores/homework";
+import {useCurrentAccount} from "@/stores/account";
+import {HeaderCalendar} from "./HomeworksHeader";
 import HomeworkItem from "./Atoms/Item";
-import { RefreshControl } from "react-native-gesture-handler";
+import {RefreshControl} from "react-native-gesture-handler";
 import HomeworksNoHomeworksItem from "./Atoms/NoHomeworks";
-import { Homework } from "@/services/shared/Homework";
-import PagerView from "react-native-pager-view";
-import { NativeList, NativeListHeader } from "@/components/Global/NativeComponents";
-import { Account, AccountService } from "@/stores/account/types";
-import { debounce } from "lodash";
-import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
+import {Homework} from "@/services/shared/Homework";
+import {NativeItem, NativeList, NativeListHeader, NativeText} from "@/components/Global/NativeComponents";
+import {Account} from "@/stores/account/types";
+import {debounce} from "lodash";
+import {dateToEpochWeekNumber, epochWNToDate} from "@/utils/epochWeekNumber";
 import InfinitePager from "react-native-infinite-pager";
+import BottomSheet from "@/components/Modals/PapillonBottomSheet";
+import {Calendar, ChevronLeft, Cog, Eye} from "lucide-react-native";
+import {PressableScale} from "react-native-pressable-scale";
+import Reanimated, {useSharedValue, withSpring} from "react-native-reanimated";
+import RNDateTimePicker from "@react-native-community/datetimepicker";
+
 
 // Types pour les props du composant HomeworkList
 type HomeworkListProps = {
   groupedHomework: Record<string, Homework[]>;
   loading: boolean;
   onDonePressHandler: (homework: Homework) => void;
+  showCheckedHomeworks: boolean;
 };
 
 const formatDate = (date: string | number | Date): string => {
@@ -31,7 +37,7 @@ const formatDate = (date: string | number | Date): string => {
   });
 };
 
-const HomeworkList: React.FC<HomeworkListProps> = React.memo(({ groupedHomework, loading, onDonePressHandler }) => {
+const HomeworkList: React.FC<HomeworkListProps> = React.memo(({ groupedHomework, loading, onDonePressHandler, showCheckedHomeworks }) => {
   if (!loading && Object.keys(groupedHomework).length === 0) {
     return <HomeworksNoHomeworksItem />;
   }
@@ -43,13 +49,16 @@ const HomeworkList: React.FC<HomeworkListProps> = React.memo(({ groupedHomework,
           <NativeListHeader label={day} />
           <NativeList>
             {groupedHomework[day].map((homework, idx) => (
-              <HomeworkItem
-                key={homework.id}
-                index={idx}
-                total={groupedHomework[day].length}
-                homework={homework}
-                onDonePressHandler={async () => onDonePressHandler(homework)}
-              />
+              <View key={homework.id}>
+                {(showCheckedHomeworks ? true:!homework.done) &&
+                    <HomeworkItem
+                      index={idx}
+                      total={groupedHomework[day].length}
+                      homework={homework}
+                      onDonePressHandler={async () => onDonePressHandler(homework)}
+                    />
+                }
+              </View>
             ))}
           </NativeList>
         </View>
@@ -68,9 +77,10 @@ type HomeworksPageProps = {
   updateHomeworks: () => Promise<void>;
   loading: boolean;
   getDayName: (date: string | number | Date) => string;
+  showCheckedHomeworks: boolean;
 };
 
-const HomeworksPage: React.FC<HomeworksPageProps> = React.memo(({ index, isActive, loaded, homeworks, account, updateHomeworks, loading, getDayName }) => {
+const HomeworksPage: React.FC<HomeworksPageProps> = React.memo(({ index, loaded, homeworks, account, updateHomeworks, loading, getDayName, showCheckedHomeworks }) => {
   const [refreshing, setRefreshing] = useState(false);
   if (!loaded) {
     return <ScrollView
@@ -137,6 +147,7 @@ const HomeworksPage: React.FC<HomeworksPageProps> = React.memo(({ index, isActiv
         groupedHomework={groupedHomework}
         loading={loading}
         onDonePressHandler={handleDonePress}
+        showCheckedHomeworks={showCheckedHomeworks}
       />
 
     </ScrollView>
@@ -157,12 +168,16 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
 
   const [epochWeekNumber, setEpochWeekNumber] = useState<number>(initialIndex);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showCheckedHomeworks, setShowCheckedHomeworks] = useState<boolean>(true);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+
+  //Animation value
+  const translateX = useSharedValue(0);
 
   useEffect(() => {
     console.log("[Homeworks]: account instance changed");
     if (account.instance) {
-      const WN = initialIndex;
-      manuallyChangeWeek(WN);
+      manuallyChangeWeek(initialIndex);
     }
   }, [account.instance]);
 
@@ -177,7 +192,7 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
         epochWeekNumber={epochWeekNumber}
         oldPageIndex={epochWeekNumber}
         showPicker={() => {
-          // TODO: Implement date picker logic here
+          Platform.OS === "ios" && setShowDatePicker(true);
         }}
         changeIndex={(index: number) => manuallyChangeWeek(index)}
       />
@@ -217,13 +232,114 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
         backgroundColor: theme.colors.background,
       }}
     >
+      <BottomSheet
+        setOpened={setShowDatePicker}
+        opened={showDatePicker}
+      >
+        <Reanimated.View style={{display: "flex", flexDirection: "row", transform: [{translateX: translateX}]}}>
+          <View style={{width: Dimensions.get("screen").width}}>
+            <View style={{
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.colors.text + "20",
+              display: "flex",
+              flexDirection: "row",
+              gap: 10,
+              alignItems: "center"
+            }}>
+              <Calendar size={24} color={theme.colors.text}/>
+              <View>
+                <NativeText variant={"overtitle"}>
+                  Sélection de la semaine
+                </NativeText>
+                <NativeText variant={"subtitle"}>
+                  {epochWNToDate(epochWeekNumber).toLocaleDateString("fr-FR", {}) + " - " + epochWNToDate(epochWeekNumber + 1).toLocaleDateString("fr-FR", {})}
+                </NativeText>
+              </View>
+              <PressableScale onPress={() => {
+                translateX.value = withSpring(-Dimensions.get("screen").width, {
+                  damping: 98,
+                  stiffness: 200
+                });
+              }} style={{marginLeft: "auto"}}>
+                <Cog size={24} color={"#999"}/>
+              </PressableScale>
+            </View>
+            <View style={{paddingHorizontal: 16}}>
+              <RNDateTimePicker
+                value={epochWNToDate(epochWeekNumber)}
+                mode={"date"}
+                display={"inline"}
+                accentColor={theme.colors.primary}
+                onChange={(_event, date) => {
+                  if (date) {
+                    setShowDatePicker(false);
+                    manuallyChangeWeek(dateToEpochWeekNumber(date));
+                  }
+                }}
+              />
+            </View>
+          </View>
+          <View style={{width: Dimensions.get("screen").width}}>
+            <View style={{
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.colors.text + "20",
+              display: "flex",
+              flexDirection: "row",
+              gap: 10,
+              alignItems: "center"
+            }}>
+              <PressableScale onPress={() => {
+                translateX.value = withSpring(0, {
+                  damping: 98,
+                  stiffness: 200
+                });
+              }}>
+                <ChevronLeft size={24} color={"#999"}/>
+              </PressableScale>
+              <View>
+                <NativeText variant={"overtitle"}>
+                  Paramètres des devoirs
+                </NativeText>
+                <NativeText variant={"subtitle"}>
+                  Régle ici les paramètres des devoirs
+                </NativeText>
+              </View>
+            </View>
+            <ScrollView contentContainerStyle={{paddingHorizontal: 16}}>
+              <NativeList>
+                <NativeItem
+                  leading={<Eye color={theme.colors.text} size={24}/> }
+                  trailing={
+                    <Switch
+                      trackColor={{true: theme.colors.primary, false: "#EEE"}}
+                      value={showCheckedHomeworks}
+                      onValueChange={setShowCheckedHomeworks}
+                    />
+                  }
+                >
+                  <NativeText variant={"default"}>
+                    Afficher les devoirs terminés
+                  </NativeText>
+                  <NativeText variant={"subtitle"}>
+                    Affiche ou non les devoirs que tu as marqué comme terminés
+                  </NativeText>
+                </NativeItem>
+              </NativeList>
+            </ScrollView>
+          </View>
+        </Reanimated.View>
+      </BottomSheet>
       {account.instance && (
         <InfinitePager
           ref={PagerRef}
           initialIndex={initialIndex}
           pageBuffer={3}
           PageComponent={
-            ({index, isActive}) => (<View style={{height: "100%"}}>
+            ({index}) => (<View style={{height: "100%"}}>
               <HomeworksPage
                 key={index}
                 index={index}
@@ -234,7 +350,9 @@ const HomeworksScreen: Screen<"Homeworks"> = ({ navigation }) => {
                 updateHomeworks={updateHomeworks}
                 loading={loading}
                 getDayName={getDayName}
-              /></View>
+                showCheckedHomeworks={showCheckedHomeworks}
+              />
+            </View>
             )}
           style={{ flex: 1}}
           onPageChange={setEpochWeekNumber}
