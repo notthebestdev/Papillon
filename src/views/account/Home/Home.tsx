@@ -500,6 +500,9 @@ const Home: Screen<"HomeScreen"> = ({ route, navigation }) => {
                     layout={animPapillon(LinearTransition)}
                     entering={animPapillon(FadeInUp)}
                     exiting={animPapillon(FadeOutDown)}
+                    style={{
+                      marginBottom: index === Elements.length - 1  ? 24 : 0,
+                    }}
                   >
                     <Element />
                   </Reanimated.View>
