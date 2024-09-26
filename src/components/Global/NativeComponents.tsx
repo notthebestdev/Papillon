@@ -1,9 +1,27 @@
-import React, { type ReactNode, isValidElement, Children } from "react";
-import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle, type TextStyle, Platform, TouchableNativeFeedback } from "react-native";
-import Reanimated, { type AnimatedProps, LinearTransition } from "react-native-reanimated";
-import { useTheme } from "@react-navigation/native";
-import { ChevronRight } from "lucide-react-native";
-import { animPapillon } from "@/utils/ui/animations";
+import React, {type ReactNode, isValidElement, Children} from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+  type TextStyle,
+  Platform,
+  TouchableNativeFeedback,
+} from "react-native";
+import Reanimated, {
+  type AnimatedProps, Extrapolation,
+  interpolate,
+  LinearTransition,
+  SharedValue,
+  useAnimatedStyle
+} from "react-native-reanimated";
+import {useTheme} from "@react-navigation/native";
+import {ChevronRight} from "lucide-react-native";
+import {animPapillon} from "@/utils/ui/animations";
+import Swipeable, {SwipeableMethods} from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated from "react-native-reanimated";
 
 /**
  * Pour une raison quelconque, Reanimated n'epxose
@@ -30,7 +48,7 @@ export const NativeList: React.FC<NativeListProps> = ({
   exiting
 }) => {
   const theme = useTheme();
-  const { colors } = theme;
+  const {colors} = theme;
 
   const childrenWithProps = Children.map(children, (child, index) => {
     if (!isValidElement(child)) return null;
@@ -59,13 +77,13 @@ export const NativeList: React.FC<NativeListProps> = ({
           borderColor: colors.border,
           backgroundColor: colors.card,
           shadowColor: "black",
-          shadowOffset: { width: 0, height: 1 },
+          shadowOffset: {width: 0, height: 1},
           shadowOpacity: 0.1,
           shadowRadius: 2,
           overflow: "visible",
           elevation: 1,
         },
-        inline && { marginTop: 16 },
+        inline && {marginTop: 16},
         style,
       ]}
       layout={animated && animPapillon(LinearTransition)}
@@ -97,9 +115,18 @@ interface NativeListHeaderProps {
   style?: StyleProp<ViewStyle>
 }
 
-export const NativeListHeader: React.FC<NativeListHeaderProps> = ({ icon, label, leading, trailing, animated, entering, exiting, style }) => {
+export const NativeListHeader: React.FC<NativeListHeaderProps> = ({
+  icon,
+  label,
+  leading,
+  trailing,
+  animated,
+  entering,
+  exiting,
+  style
+}) => {
   const theme = useTheme();
-  const { colors } = theme;
+  const {colors} = theme;
 
   let newIcon = null;
 
@@ -130,7 +157,7 @@ export const NativeListHeader: React.FC<NativeListHeaderProps> = ({ icon, label,
 
       <Text
         style={[
-          { color: colors.text },
+          {color: colors.text},
           list_header_styles.label,
         ]}
         numberOfLines={1}
@@ -170,6 +197,12 @@ export const NativePressable: React.FC<NativePressableProps> = (props) => {
   );
 };
 
+interface NativeItemSwipeableProps {
+  icon: ReactNode;
+  backgroundColor: string;
+  onPress: () => void;
+}
+
 interface NativeItemProps {
   children?: ReactNode;
   onPress?: () => void;
@@ -193,7 +226,81 @@ interface NativeItemProps {
   endPadding?: number;
   disabled?: boolean;
   pointerEvents?: any;
+  swipeableActionsLeft?: NativeItemSwipeableProps[];
+  swipeableActionsRight?: NativeItemSwipeableProps[];
 }
+
+const NativeItemSwipeable: React.FC<{
+  items: NativeItemSwipeableProps[];
+  progress: SharedValue<number>;
+  dragX: SharedValue<number>;
+  isRight: boolean;
+  swipeable: SwipeableMethods;
+}> = ({items, dragX, isRight, swipeable}) => {
+
+  let viewStyle = useAnimatedStyle(() => ({
+    flex: interpolate(
+      dragX.value,
+      [-(70 * items.length), 0, 70 * items.length],
+      [1, 0, 1],
+      Extrapolation.CLAMP
+    )
+  }));
+  let iconStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      dragX.value,
+      [-(70 * items.length), 0, 70 * items.length],
+      [1, 0, 1],
+      Extrapolation.CLAMP
+    )
+  }));
+
+  return (
+    <View
+      style={{
+        width: 70 * items.length,
+        flexDirection: "row",
+        justifyContent: isRight ? "flex-end" : "flex-start",
+      }}
+    >
+      <Reanimated.View style={viewStyle}>
+        <View style={{flexDirection: "row", flex: 1}}>
+          {items.map((item, index) => (
+            <Animated.View
+              style={{
+                backgroundColor: item.backgroundColor,
+                flex: 1,
+              }}
+              key={index}
+            >
+              <NativePressable
+                onPress={() => {
+                  swipeable.close();
+                  item.onPress();
+                }}
+                style={({pressed}) => [
+                  {
+                    backgroundColor: pressed ? "#00000012" : "transparent",
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                ]}
+              >
+                <Reanimated.View style={iconStyle}>
+                  {React.cloneElement(item.icon as React.ReactElement<any>, {
+                    size: 24,
+                    color: "#FFF",
+                  })}
+                </Reanimated.View>
+              </NativePressable>
+            </Animated.View>
+          ))}
+        </View>
+      </Reanimated.View>
+    </View>
+  );
+};
 
 export const NativeItem: React.FC<NativeItemProps> = ({
   children,
@@ -217,10 +324,12 @@ export const NativeItem: React.FC<NativeItemProps> = ({
   subtitle,
   endPadding,
   disabled,
-  pointerEvents
+  pointerEvents,
+  swipeableActionsLeft = [],
+  swipeableActionsRight = [],
 }) => {
   const theme = useTheme();
-  const { colors } = theme;
+  const {colors} = theme;
 
   return (
     <Reanimated.View
@@ -229,93 +338,116 @@ export const NativeItem: React.FC<NativeItemProps> = ({
       exiting={exiting && exiting}
       pointerEvents={pointerEvents}
     >
-      <NativePressable
-        onPress={!disabled ? onPress : () => {}}
-        onLongPress={!disabled ? onLongPress : () => {}}
-        delayLongPress={delayLongPress}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        androidStyle={androidStyle}
-        style={({ pressed }) => [
-          item_styles.item,
-          onPress && {
-            backgroundColor: pressed && !disabled ? colors.text + "12" : "transparent",
-          },
-          style,
-          disabled && {
-            opacity: 0.5,
-          },
-        ]}
+      <Swipeable
+        childrenContainerStyle={{
+          backgroundColor: colors.card
+        }}
+        renderLeftActions={(progress, dragX, swipeable) => NativeItemSwipeable({
+          items: swipeableActionsLeft,
+          progress,
+          dragX,
+          isRight: false,
+          swipeable
+        })}
+        renderRightActions={(progress, dragX, swipeable) => NativeItemSwipeable({
+          items: swipeableActionsRight,
+          progress,
+          dragX,
+          isRight: true,
+          swipeable
+        })}
+        overshootFriction={8}
       >
-        <View style={[item_styles.part, item_styles.leading]}>
-          {leading && !icon && leading}
+        <NativePressable
+          onPress={!disabled ? onPress : () => {
+          }}
+          onLongPress={!disabled ? onLongPress : () => {
+          }}
+          delayLongPress={delayLongPress}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          androidStyle={androidStyle}
+          style={({pressed}) => [
+            item_styles.item,
+            onPress && {
+              backgroundColor: pressed && !disabled ? colors.text + "12" : "transparent",
+            },
+            style,
+            disabled && {
+              opacity: 0.5,
+            },
+          ]}
+        >
+          <View style={[item_styles.part, item_styles.leading]}>
+            {leading && !icon && leading}
 
-          {icon && (
-            React.cloneElement(icon as React.ReactElement<any>, {
-              size: 24,
-              color: colors.text,
-              style: {
-                marginRight: 16,
-                opacity: 0.8,
-                marginLeft: 0,
-              },
-              ...iconStyle
-            })
-          )}
-        </View>
-
-        <View style={[
-          {
-            flex: 1,
-            height: "100%",
-            alignContent: "center",
-            justifyContent: "center",
-            alignItems: "center",
-            flexDirection: "row",
-            borderBottomWidth: separator ? 0.5 : 0,
-            borderColor: colors.border,
-          },
-          !leading && { marginLeft: -15 },
-        ]}>
+            {icon && (
+              React.cloneElement(icon as React.ReactElement<any>, {
+                size: 24,
+                color: colors.text,
+                style: {
+                  marginRight: 16,
+                  opacity: 0.8,
+                  marginLeft: 0,
+                },
+                ...iconStyle
+              })
+            )}
+          </View>
 
           <View style={[
-            item_styles.part,
-            item_styles.content
+            {
+              flex: 1,
+              height: "100%",
+              alignContent: "center",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "row",
+              borderBottomWidth: separator ? 0.5 : 0,
+              borderColor: colors.border,
+            },
+            !leading && {marginLeft: -15},
           ]}>
-            {title && (
-              <NativeText variant="title">
-                {title}
-              </NativeText>
+
+            <View style={[
+              item_styles.part,
+              item_styles.content
+            ]}>
+              {title && (
+                <NativeText variant="title">
+                  {title}
+                </NativeText>
+              )}
+
+              {subtitle && (
+                <NativeText variant="subtitle">
+                  {subtitle}
+                </NativeText>
+              )}
+
+              {children}
+            </View>
+
+            <View style={[item_styles.part, item_styles.trailing, {
+              paddingRight: endPadding ?? 9,
+            }]}>
+              {trailing}
+            </View>
+
+            {onPress && chevron !== false && (
+              <ChevronRight
+                size={24}
+                strokeWidth={2.5}
+                color={colors.text}
+                style={{
+                  opacity: 0.6,
+                  marginRight: 6,
+                }}
+              />
             )}
-
-            {subtitle && (
-              <NativeText variant="subtitle">
-                {subtitle}
-              </NativeText>
-            )}
-
-            {children}
           </View>
-
-          <View style={[item_styles.part, item_styles.trailing, {
-            paddingRight: endPadding ?? 9,
-          }]}>
-            {trailing}
-          </View>
-
-          {onPress && chevron !== false && (
-            <ChevronRight
-              size={24}
-              strokeWidth={2.5}
-              color={colors.text}
-              style={{
-                opacity: 0.6,
-                marginRight: 6,
-              }}
-            />
-          )}
-        </View>
-      </NativePressable>
+        </NativePressable>
+      </Swipeable>
     </Reanimated.View>
   );
 };
@@ -326,7 +458,7 @@ interface NativeIconProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export const NativeIcon: React.FC<NativeIconProps> = ({ icon, color, style }) => {
+export const NativeIcon: React.FC<NativeIconProps> = ({icon, color, style}) => {
   return (
     <View
       style={[{
@@ -349,7 +481,7 @@ export const NativeIcon: React.FC<NativeIconProps> = ({ icon, color, style }) =>
 
 interface NativeTextProps {
   children: ReactNode;
-  variant?: "title" | "titleLarge" | "subtitle" | "overtitle" | "body"| "default" | "titleLarge2";
+  variant?: "title" | "titleLarge" | "subtitle" | "overtitle" | "body" | "default" | "titleLarge2";
   color?: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
@@ -361,7 +493,7 @@ interface NativeTextProps {
 
 export const NativeText: React.FC<NativeTextProps> = (props) => {
   const theme = useTheme();
-  const { colors } = theme;
+  const {colors} = theme;
 
   let fontStyle: TextStyle = {};
 
