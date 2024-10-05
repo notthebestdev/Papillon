@@ -12,6 +12,7 @@ import PapillonSpinner from "@/components/Global/PapillonSpinner";
 import { NativeText } from "@/components/Global/NativeComponents";
 
 const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
+  console.log("UnivPau_Login component initialized");
   const mainURL = "https://sso.univ-pau.fr/cas/login";
   const theme = useTheme();
 
@@ -24,11 +25,13 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
   const [isLoadingText, setIsLoadingText] = React.useState("Connexion en cours...");
 
   const loginUnivData = async (data: any) => {
-    console.log("Received user data:", data);
+    console.log("loginUnivData function called with data:", JSON.stringify(data, null, 2));
 
     if (data?.uid && data?.name) {
+      console.log("Valid uid and name found in data");
       const [firstName, ...lastNameParts] = data.name[0].split(" ");
       const lastName = lastNameParts.join(" ");
+      console.log(`Parsed name: firstName=${firstName}, lastName=${lastName}`);
 
       const local_account: LocalAccount = {
         authentication: undefined,
@@ -57,15 +60,22 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         personalization: await defaultPersonalization()
       };
 
+      console.log("Created local_account:", JSON.stringify(local_account, null, 2));
+
       createStoredAccount(local_account);
+      console.log("Stored account created");
       switchTo(local_account);
+      console.log("Switched to new account");
 
       queueMicrotask(() => {
+        console.log("Resetting navigation to AccountCreated");
         navigation.reset({
           index: 0,
           routes: [{ name: "AccountCreated" }],
         });
       });
+    } else {
+      console.log("Invalid data: missing uid or name");
     }
   };
 
@@ -112,52 +122,74 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         ref={webViewRef}
         startInLoadingState={true}
         incognito={true}
-        onLoadEnd={() => {
+        onLoadStart={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.log("WebView load started:", nativeEvent.url);
+        }}
+        onLoadEnd={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.log("WebView load ended:", nativeEvent.url);
           webViewRef.current?.injectJavaScript(`
+            console.log("Injected JavaScript running");
             if (document.getElementById('fm1')) {
-              // We're on the login page
+              console.log("Login form detected");
               document.getElementById('fm1').onsubmit = function() {
+                console.log("Login form submitted");
                 window.ReactNativeWebView.postMessage(JSON.stringify({type: "formSubmitted"}));
                 return true;
               };
               window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
             } else if (document.getElementById('principalId')) {
-              // We're on the successful login page
+              console.log("Principal ID detected, parsing user data");
               const principalData = {};
               const rows = document.querySelectorAll('#attributesTable tbody tr');
               rows.forEach(row => {
                 const key = row.querySelector('td:first-child code kbd').textContent;
                 const value = row.querySelector('td:last-child code kbd').textContent;
+                console.log("Parsing row:", key, value);
                 try {
                   principalData[key] = JSON.parse(value);
                 } catch (e) {
+                  console.log("Error parsing JSON for key:", key, "Error:", e);
                   principalData[key] = value;
                 }
               });
-              console.log("Principal data:", JSON.stringify(principalData));
+              console.log("Parsed principal data:", JSON.stringify(principalData, null, 2));
               window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: "loginData", 
                 data: principalData
               }));
             } else {
+              console.log("Neither login form nor principal ID detected");
               window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
             }
           `);
         }}
-        onMessage={(e) => {
-          const data = JSON.parse(e.nativeEvent.data);
+        onMessage={(event) => {
+          console.log("Message received from WebView");
+          const data = JSON.parse(event.nativeEvent.data);
+          console.log("Parsed message data:", JSON.stringify(data, null, 2));
           switch (data.type) {
             case "formSubmitted":
+              console.log("Form submitted, updating loading state");
               setIsLoadingText("Vérification des identifiants...");
               setIsLoading(true);
               break;
             case "loginData":
+              console.log("Login data received, calling loginUnivData");
               loginUnivData(data.data);
               break;
             case "loadingComplete":
+              console.log("Loading complete, hiding spinner");
               setIsLoading(false);
               break;
+            default:
+              console.log("Unknown message type:", data.type);
           }
+        }}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error("WebView error:", nativeEvent);
         }}
       />
     </View>
