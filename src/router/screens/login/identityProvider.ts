@@ -5,6 +5,7 @@ import UnivRennes1_Login from "@/views/login/IdentityProvider/providers/UnivRenn
 import UnivLimoges_Login from "@/views/login/IdentityProvider/providers/UnivLimoges";
 import UnivRennes2_Login from "@/views/login/IdentityProvider/providers/UnivRennes2";
 import UnivSorbonneParisNord_login from "@/views/login/IdentityProvider/providers/UnivSorbonneParisNord";
+import UnivPau_Login from "@/views/login/IdentityProvider/providers/UnivPau";
 
 export default [
   createScreen("IdentityProviderSelector", IdentityProviderSelector, {
@@ -30,6 +31,11 @@ export default [
   createScreen("UnivSorbonneParisNord_login", UnivSorbonneParisNord_login, {
     headerBackVisible: true,
     headerTitle: "Université Sorbonne Paris Nord",
+  }),
+
+  createScreen("UnivPau_Login", UnivPau_Login, {
+    headerBackVisible: true,
+    headerTitle: "Université de Pau",
   }),
 
 

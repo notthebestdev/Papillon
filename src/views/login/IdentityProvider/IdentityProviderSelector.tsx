@@ -36,6 +36,13 @@ const IdentityProviderSelector: Screen<"IdentityProviderSelector"> = ({ navigati
       image: require("@/../assets/images/service_uspn.png"),
       navigate: () => navigation.navigate("UnivSorbonneParisNord_login"),
     },
+    {
+      name: "univ_pau",
+      title: "Université de Pau",
+      description: "Utilisez votre compte SSO Pau pour vous connecter",
+      image: require("@/../assets/images/service_uspn.png"),
+      navigate: () => navigation.navigate("UnivPau_Login"),
+    },
   ];
 
   return (
