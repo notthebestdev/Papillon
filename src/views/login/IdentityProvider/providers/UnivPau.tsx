@@ -109,7 +109,15 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         incognito={true}
         onLoadEnd={() => {
           webViewRef.current?.injectJavaScript(`
-            if (document.getElementById('principalId')) {
+            if (document.getElementById('fm1')) {
+              // We're on the login page
+              document.getElementById('fm1').onsubmit = function() {
+                window.ReactNativeWebView.postMessage(JSON.stringify({type: "formSubmitted"}));
+                return true;
+              };
+              window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
+            } else if (document.getElementById('principalId')) {
+              // We're on the successful login page
               const principalData = {};
               const rows = document.querySelectorAll('#attributesTable tbody tr');
               rows.forEach(row => {
@@ -129,10 +137,17 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         }}
         onMessage={(e) => {
           const data = JSON.parse(e.nativeEvent.data);
-          if (data.type === "loginData") {
-            loginUnivData(data.data);
-          } else if (data.type === "loadingComplete") {
-            setIsLoading(false);
+          switch (data.type) {
+            case "formSubmitted":
+              setIsLoadingText("Vérification des identifiants...");
+              setIsLoading(true);
+              break;
+            case "loginData":
+              loginUnivData(data.data);
+              break;
+            case "loadingComplete":
+              setIsLoading(false);
+              break;
           }
         }}
       />
