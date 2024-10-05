@@ -107,10 +107,9 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         ref={webViewRef}
         startInLoadingState={true}
         incognito={true}
-        onLoadEnd={(e) => {
-          if (e.nativeEvent.title === "CAS - Central Authentication Service Connexion réussie") {
-            setIsLoadingText("Récupération des données...");
-            webViewRef.current?.injectJavaScript(`
+        onLoadEnd={() => {
+          webViewRef.current?.injectJavaScript(`
+            if (document.getElementById('principalId')) {
               const principalData = {};
               const rows = document.querySelectorAll('#attributesTable tbody tr');
               rows.forEach(row => {
@@ -120,16 +119,20 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
               });
               if (principalData.uid) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({type: "loginData", data: principalData}));
+              } else {
+                window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
               }
-            `);
-          } else {
-            setIsLoading(false);
-          }
+            } else {
+              window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
+            }
+          `);
         }}
         onMessage={(e) => {
           const data = JSON.parse(e.nativeEvent.data);
           if (data.type === "loginData") {
             loginUnivData(data.data);
+          } else if (data.type === "loadingComplete") {
+            setIsLoading(false);
           }
         }}
       />
