@@ -23,9 +23,11 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isLoadingText, setIsLoadingText] = React.useState("Connexion en cours...");
 
-  const loginUnivData = async (data: { name: string, uid: string }) => {
+  const loginUnivData = async (data: any) => {
+    console.log("Received user data:", data);
+
     if (data?.uid && data?.name) {
-      const [firstName, ...lastNameParts] = data.name.split(" ");
+      const [firstName, ...lastNameParts] = data.name[0].split(" ");
       const lastName = lastNameParts.join(" ");
 
       const local_account: LocalAccount = {
@@ -44,12 +46,12 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
         isExternal: false,
         linkedExternalLocalIDs: [],
 
-        name: data.name,
+        name: data.name[0],
         studentName: {
           first: firstName,
           last: lastName,
         },
-        className: "",
+        className: data.supannEtuCursusAnnee?.[0] || "UPPA",
         schoolName: "Université de Pau et des Pays de l'Adour",
 
         personalization: await defaultPersonalization()
@@ -121,23 +123,22 @@ const UnivPau_Login: Screen<"UnivPau_Login"> = ({ navigation }) => {
               window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
             } else if (document.getElementById('principalId')) {
               // We're on the successful login page
-              const nameRow = Array.from(document.querySelectorAll('#attributesTable tbody tr')).find(row => 
-                row.querySelector('td:first-child code kbd').textContent === 'name'
-              );
-              const uidRow = Array.from(document.querySelectorAll('#attributesTable tbody tr')).find(row => 
-                row.querySelector('td:first-child code kbd').textContent === 'uid'
-              );
-              
-              if (nameRow && uidRow) {
-                const name = JSON.parse(nameRow.querySelector('td:last-child code kbd').textContent)[0];
-                const uid = JSON.parse(uidRow.querySelector('td:last-child code kbd').textContent)[0];
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: "loginData", 
-                  data: { name, uid }
-                }));
-              } else {
-                window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
-              }
+              const principalData = {};
+              const rows = document.querySelectorAll('#attributesTable tbody tr');
+              rows.forEach(row => {
+                const key = row.querySelector('td:first-child code kbd').textContent;
+                const value = row.querySelector('td:last-child code kbd').textContent;
+                try {
+                  principalData[key] = JSON.parse(value);
+                } catch (e) {
+                  principalData[key] = value;
+                }
+              });
+              console.log("Principal data:", JSON.stringify(principalData));
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: "loginData", 
+                data: principalData
+              }));
             } else {
               window.ReactNativeWebView.postMessage(JSON.stringify({type: "loadingComplete"}));
             }
