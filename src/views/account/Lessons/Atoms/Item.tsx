@@ -17,6 +17,7 @@ import Reanimated, {
 import NativeTouchable from "@/components/Global/NativeTouchable";
 import { getSubjectData } from "@/services/shared/Subject";
 import { animPapillon } from "@/utils/ui/animations";
+import { PressableScale } from "react-native-pressable-scale";
 
 const lz = (num: number) => (num < 10 ? `0${num}` : num);
 
@@ -53,9 +54,9 @@ export const TimetableItem: React.FC<{
         <Text style={[styles.timeTextSec, { color: colors.text }]}>{formattedEndTime}</Text>
       </View>
 
-      <NativeTouchable
+      <PressableScale
         style={[styles.detailsContainer, { backgroundColor: colors.card, borderColor: colors.text + "33" }]}
-        underlayColor={colors.text + "11"}
+        weight="light"
         onPress={() => {
           PapillonNavigation.current.navigate("LessonDocument", { lesson: item });
 
@@ -68,12 +69,15 @@ export const TimetableItem: React.FC<{
             </View>
           )}
 
-          <View style={[{ flex: 1, flexDirection: "row", padding: 10 }]}>
+          <View style={[{ flex: 1, flexDirection: "row", padding: 0 }]}>
             <View style={styles.colorIndicator}>
-              <ColorIndicator color={subjectData.color} />
+              <ColorIndicator
+                color={subjectData.color}
+                width={8}
+              />
             </View>
 
-            <View style={{ flexDirection: "column", flexShrink: 1, gap: 6, flex: 1 }}>
+            <View style={{ flexDirection: "column", flexShrink: 1, gap: 6, flex: 1, padding: 10, paddingLeft: 2 }}>
               <Text numberOfLines={2} style={[styles.titleText, { color: colors.text }]}>{subjectData.pretty || "Cours inconnu"}</Text>
 
               {item.itemType && (
@@ -97,7 +101,7 @@ export const TimetableItem: React.FC<{
             </View>
           </View>
         </View>
-      </NativeTouchable>
+      </PressableScale>
     </Reanimated.View>
   );
 };
