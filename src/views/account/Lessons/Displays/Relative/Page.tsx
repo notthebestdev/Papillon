@@ -103,7 +103,7 @@ const CourseItem = React.memo(({ course, colors, start, duration }) => {
   );
 });
 
-const RelativePage = ({ day }) => {
+const RelativePage = ({ day, onLayout }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { height: windowHeight } = Dimensions.get("window");
@@ -123,6 +123,7 @@ const RelativePage = ({ day }) => {
     <ScrollView
       ref={scrollViewRef}
       onLayout={() => {
+        onLayout();
         if (scrollViewRef.current) {
           const yOffset = (DEFAULT_SCROLL_HOUR - START_HOUR) * HOUR_HEIGHT;
           scrollViewRef.current.scrollTo({ y: yOffset, animated: false });

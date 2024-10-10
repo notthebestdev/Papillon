@@ -144,6 +144,7 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
   ];
 
   const [PageType, setPageType] = useState(0);
+  const [componentLoading, setComponentLoading] = useState(false);
 
   const Page = PageTypes[PageType].component;
 
@@ -152,6 +153,11 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
     return (
       <View style={{ width: Dimensions.get("window").width }}>
         <Page
+          onLayout={() => {
+            if (componentLoading) {
+              setComponentLoading(false);
+            }
+          }}
           paddingTop={outsideNav ? 80 : insets.top + 56}
           current={date.getTime() === pickerDate.getTime()}
           date={date}
@@ -182,7 +188,7 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <PapillonModernHeader outsideNav={outsideNav}>
         <PapillonHeaderSelector
-          loading={loading}
+          loading={loading || componentLoading}
           onPress={() => setShowDatePicker(true)}
         >
           <Reanimated.View
@@ -237,7 +243,10 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
           ]}
           onSelectionChange={(title) => {
             const index = PageTypes.findIndex((page) => page.pretty === title);
-            setPageType(index);
+            setComponentLoading(true);
+            setTimeout(() => {
+              setPageType(index);
+            }, 20);
           }}
         >
           <PapillonHeaderAction

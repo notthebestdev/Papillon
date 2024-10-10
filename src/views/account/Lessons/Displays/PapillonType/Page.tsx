@@ -31,9 +31,10 @@ const getDuration = (minutes: number): string => {
   return `${durationHours} h ${lz(durationRemainingMinutes)} min`;
 };
 
-export const Page = ({ day, date, current, paddingTop, refreshAction, loading, weekExists }) => {
+export const Page = ({ onLayout, day, date, current, paddingTop, refreshAction, loading, weekExists }) => {
   return (
     <ScrollView
+      onLayout={onLayout}
       style={{
         flex: 1,
         width: "100%",
