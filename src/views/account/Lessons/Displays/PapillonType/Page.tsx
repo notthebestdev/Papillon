@@ -157,7 +157,7 @@ const SeparatorCourse: React.FC<{
         }}
       >
         <Image
-          source={require("../../../../../assets/images/mask_course.png")}
+          source={require("../../../../../../assets/images/mask_course.png")}
           resizeMode='cover'
           tintColor={colors.text}
           style={{

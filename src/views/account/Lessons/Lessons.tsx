@@ -5,12 +5,12 @@ import { Button, StyleSheet } from "react-native";
 import { Screen } from "@/router/helpers/types";
 import { NativeText } from "@/components/Global/NativeComponents";
 import InfiniteDatePager from "@/components/Global/InfiniteDatePager";
-import HorizontalDatePicker from "./Atoms/LessonsDatePicker";
+import HorizontalDatePicker from "./Displays/PapillonType/LessonsDatePicker";
 import { useCurrentAccount } from "@/stores/account";
 import { useTimetableStore } from "@/stores/timetable";
 import { AccountService } from "@/stores/account/types";
 import { updateTimetableForWeekInCache } from "@/services/timetable";
-import { Page } from "./Atoms/Page";
+import { Page as PapillonTypePage } from "./Displays/PapillonType/Page";
 import { LessonsDateModal } from "./LessonsHeader";
 import { set, size } from "lodash";
 import { dateToEpochWeekNumber } from "@/utils/epochWeekNumber";
@@ -25,10 +25,11 @@ import { BlurView } from "expo-blur";
 import AnimatedNumber from "@/components/Global/AnimatedNumber";
 import { LinearGradient } from "expo-linear-gradient";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { ArrowLeftToLine, ArrowUp, CalendarCheck, CalendarClock, CalendarPlus, CalendarSearch, Clock, History, Link2, LinkIcon, ListRestart, Loader, MoreHorizontal, MoreVertical, Plus, Rewind } from "lucide-react-native";
+import { ArrowLeftToLine, ArrowUp, CalendarCheck, CalendarClock, CalendarDays, CalendarPlus, CalendarSearch, Clock, Eye, History, Layers, Link2, LinkIcon, ListRestart, Loader, MoreHorizontal, MoreVertical, Plus, Rewind } from "lucide-react-native";
 import { PapillonHeaderAction, PapillonHeaderSelector, PapillonHeaderSeparator, PapillonModernHeader } from "@/components/Global/PapillonModernHeader";
 import { fetchIcalData } from "@/services/local/ical";
 import PapillonPicker from "@/components/Global/PapillonPicker";
+import RelativePage from "./Displays/Relative/Page";
 
 const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
   const account = useCurrentAccount(store => store.account!);
@@ -129,10 +130,27 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
     });
   });
 
+  const PageTypes = [
+    {
+      type: "PapillonType",
+      component: PapillonTypePage,
+      pretty: "Par défaut"
+    },
+    {
+      type: "Relative",
+      component: RelativePage,
+      pretty: "Calendrier"
+    },
+  ];
+
+  const [PageType, setPageType] = useState(0);
+
+  const Page = PageTypes[PageType].component;
+
   const renderItem = useCallback(({ item: date }) => {
     const weekNumber = getWeekFromDate(date);
     return (
-      <View style={{ width: Dimensions.get('window').width }}>
+      <View style={{ width: Dimensions.get("window").width }}>
         <Page
           paddingTop={outsideNav ? 80 : insets.top + 56}
           current={date.getTime() === pickerDate.getTime()}
@@ -155,8 +173,8 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
   }, [loadTimetableWeek]);
 
   const getItemLayout = useCallback((_, index) => ({
-    length: Dimensions.get('window').width,
-    offset: Dimensions.get('window').width * index,
+    length: Dimensions.get("window").width,
+    offset: Dimensions.get("window").width * index,
     index,
   }), []);
 
@@ -213,6 +231,26 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
           animated
           direction="right"
           delay={0}
+          selected={PageTypes[PageType].pretty}
+          data={[
+            ...PageTypes.map((page) => page.pretty),
+          ]}
+          onSelectionChange={(title) => {
+            const index = PageTypes.findIndex((page) => page.pretty === title);
+            setPageType(index);
+          }}
+        >
+          <PapillonHeaderAction
+            icon={<CalendarDays />}
+            entering={animPapillon(ZoomIn)}
+            exiting={FadeOut.duration(130)}
+          />
+        </PapillonPicker>
+
+        <PapillonPicker
+          animated
+          direction="right"
+          delay={0}
           data={[
             {
               icon: <CalendarPlus />,
@@ -220,7 +258,7 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
               onPress: () => {
                 navigation.navigate("LessonsImportIcal");
               }
-            }
+            },
           ]}
         >
           <PapillonHeaderAction
