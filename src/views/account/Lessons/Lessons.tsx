@@ -243,6 +243,9 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
           ]}
           onSelectionChange={(title) => {
             const index = PageTypes.findIndex((page) => page.pretty === title);
+            if (index == PageType) {
+              return;
+            }
             setComponentLoading(true);
             setTimeout(() => {
               setPageType(index);
