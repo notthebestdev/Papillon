@@ -56,7 +56,7 @@ const LoginView: React.FC<{
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const [customFieldsInputs, setCustomFields] = useState<
+  const [customFieldsInputs, setCustomFieldsInputs] = useState<
     LoginViewCustomInput[]
   >(
     customFields.map((field) => ({
@@ -97,6 +97,7 @@ const LoginView: React.FC<{
             flexDirection: "row",
             gap: 14,
             margin: 4,
+            alignItems: "center",
           }}
         >
           <Image
@@ -107,7 +108,12 @@ const LoginView: React.FC<{
               borderRadius: 80,
             }}
           />
-          <View>
+          <View
+            style={{
+              flex: 1,
+              gap: 2,
+            }}
+          >
             <NativeText
               style={{
                 fontSize: 16,
@@ -214,7 +220,7 @@ const LoginView: React.FC<{
                 <TextInput
                   value={field.value}
                   onChangeText={(text) => {
-                    setCustomFields(
+                    setCustomFieldsInputs(
                       customFieldsInputs.map((f, i) => {
                         if (i === index) {
                           return {

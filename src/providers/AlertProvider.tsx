@@ -13,7 +13,7 @@ type AlertAction = {
   backgroundColor?: string;
 };
 
-type Alert = {
+export type Alert = {
   title: string;
   message: string;
   actions?: AlertAction[];

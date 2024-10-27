@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>7.2.0</string>
+    <string>7.2.1</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -46,21 +46,21 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Autoriser $(PRODUCT_NAME) à utiliser votre caméra.</string>
+    <string>Papillon utilise ta caméra pour scanner des QR-codes pour vous connecter, pour capturer des documents, ou pour des fonctionnalités amusantes telles que les réaction.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Autoriser $(PRODUCT_NAME) à utiliser votre localisation.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>Autoriser $(PRODUCT_NAME) à utiliser votre localisation.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Autoriser $(PRODUCT_NAME) à utiliser votre localisation.</string>
+    <string>Papillon utilise ton emplacement pour trouver les établissements autour de toi.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Autoriser $(PRODUCT_NAME) à utiliser votre microphone.</string>
+    <string>Papillon utilise ton micro pour enregistrer des travaux audio ou des cours.</string>
     <key>NSMotionUsageDescription</key>
-    <string>Autoriser $(PRODUCT_NAME) à utiliser les capteurs de mouvement de votre appareil.</string>
+    <string>Papillon utilise les capteurs de mouvement de ton appareil pour de nombreuses fonctionnalités interactives.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to save photos</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Papillon utilise tes photos pour ton profil, ta gestion des cours et bien plus.</string>
+    <string>Papillon utilise tes photos et vidéos pour personnaliser ton profil, ta gestion des cours et bien plus.</string>
     <key>UIBackgroundModes</key>
     <array>
       <string>fetch</string>

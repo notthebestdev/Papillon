@@ -1,8 +1,9 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteParameters } from "@/router/helpers/types";
-import { Check, KeyRound, LockKeyhole } from "lucide-react-native";
+import { KeyRound, LockKeyhole } from "lucide-react-native";
 import pronote from "pawnote";
 import {info, warn} from "@/utils/logger/logger";
+import type { Alert } from "@/providers/AlertProvider";
 
 /**
  * Va exécuter une requête pour déterminer
@@ -14,7 +15,7 @@ import {info, warn} from "@/utils/logger/logger";
 const determinateAuthenticationView = async <ScreenName extends keyof RouteParameters>(
   pronoteURL: string,
   navigation: NativeStackNavigationProp<RouteParameters, ScreenName>,
-  showAlert: any // TODO: type
+  showAlert: (alert: Alert) => void
 ): Promise<void> => {
   let instance: pronote.Instance | undefined;
   if (!pronoteURL.startsWith("https://") && !pronoteURL.startsWith("http://")) {

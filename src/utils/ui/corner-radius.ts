@@ -26,6 +26,10 @@ const radiuses = [
     radius: 55.0
   },
   {
+    devices: "16, 16 pro, 16 pro max, 16 plus",
+    radius: 59.0
+  },
+  {
     devices: "pixel 3",
     radius: 20.0
   },

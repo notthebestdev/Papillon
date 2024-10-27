@@ -6,7 +6,7 @@ import pronote from "pawnote";
 import uuid from "@/utils/uuid-v4";
 
 import { useAccounts, useCurrentAccount } from "@/stores/account";
-import { Account, AccountService } from "@/stores/account/types";
+import { AccountService, PronoteAccount } from "@/stores/account/types";
 import defaultPersonalization from "@/services/pronote/default-personalization";
 import LoginView from "@/components/Templates/LoginView";
 import extract_pronote_name from "@/utils/format/extract_pronote_name";
@@ -32,12 +32,24 @@ const PronoteCredentials: Screen<"PronoteCredentials"> = ({ route, navigation })
         username,
         password,
         deviceUUID: accountID
+      }).catch((error) => {
+        if (error instanceof pronote.SecurityError && !error.handle.shouldCustomPassword && !error.handle.shouldCustomDoubleAuth) {
+          navigation.navigate("Pronote2FA_Auth", {
+            session,
+            error,
+            accountID
+          });
+        } else {
+          throw error;
+        }
       });
+
+      if (!refresh) throw pronote.AuthenticateError;
 
       const user = session.user.resources[0];
       const name = user.name;
 
-      const account: Account = {
+      const account: PronoteAccount = {
         instance: session,
 
         localID: accountID,
@@ -84,8 +96,6 @@ const PronoteCredentials: Screen<"PronoteCredentials"> = ({ route, navigation })
       }
     }
   };
-
-  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <LoginView

@@ -1,7 +1,7 @@
 export interface TimetableClass {
   subject: string
-  id: number|string
-  type: "lesson" | "activity" | "detention"
+  id: number | string
+  type: "lesson" | "activity" | "detention" | "vacation"
   title: string,
   itemType?: string,
   startTimestamp: number
@@ -11,11 +11,14 @@ export interface TimetableClass {
   teacher?: string
   backgroundColor?: string,
   status?: TimetableClassStatus,
+  statusText?: string,
   source?: string
 }
 
 export type Timetable = Array<TimetableClass>;
 
 export enum TimetableClassStatus {
-  CANCELED = "canceled",
+  CANCELED = "Annulé",
+  MODIFIED = "Modifié",
+  TEST = "ds",
 }

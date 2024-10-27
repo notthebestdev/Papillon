@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { RouteParameters, Screen } from "@/router/helpers/types";
-import { Platform, TextInput, View, StyleSheet, TouchableOpacity } from "react-native";
+import { TextInput, View, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import determinateAuthenticationView from "@/services/pronote/determinate-authentication-view";
 
@@ -33,16 +33,14 @@ const PronoteManualURL: Screen<"PronoteManualURL"> = ({ route, navigation }) => 
   }, [route.params]);
 
   const [clipboardFound, setClipboardFound] = useState(false);
-  const [clipboardHasBeenFound, setClipboardHasBeenFound] = useState(false);
 
-  // get url from clipboard if ios
+  // get url from clipboard
   useEffect(() => {
-    if (Platform.OS === "ios" && instanceURL === "" && !route.params?.url) {
+    if (instanceURL === "" && !route.params?.url) {
       Clipboard.getStringAsync().then((clipboardContent) => {
         if (clipboardContent && clipboardContent.startsWith("https://") && clipboardContent.includes("/pronote")) {
           setInstanceURL(clipboardContent);
           setClipboardFound(true);
-          setClipboardHasBeenFound(true);
         }
       });
     }
@@ -57,7 +55,7 @@ const PronoteManualURL: Screen<"PronoteManualURL"> = ({ route, navigation }) => 
     navigation: NativeStackNavigationProp<RouteParameters, ScreenName>,
     showAlert: any
   ): Promise<void> => {
-    if (!instanceURL.includes("demo.index-education.net")) return determinateAuthenticationView(instanceURL, navigation, showAlert);
+    if (!instanceURL.includes("demo.index-education.net")) return determinateAuthenticationView(instanceURL.trim(), navigation, showAlert);
     showAlert({
       title: "Instance non prise en charge",
       message: "Désolé, les instances de démonstration ne sont pas prises en charge, elles peuvent être instables ou ne pas fonctionner correctement.",
@@ -127,6 +125,11 @@ const PronoteManualURL: Screen<"PronoteManualURL"> = ({ route, navigation }) => 
 
             value={instanceURL}
             onChangeText={setInstanceURL}
+            onSubmitEditing={() => {
+              if (instanceURL.length > 0) {
+                checkForDemoInstance(instanceURL, navigation, showAlert);
+              };
+            }}
           />
 
           {instanceURL.length > 0 && (
@@ -153,7 +156,11 @@ const PronoteManualURL: Screen<"PronoteManualURL"> = ({ route, navigation }) => 
         <ButtonCta
           value="Confirmer"
           primary
-          onPress={() => checkForDemoInstance(instanceURL, navigation, showAlert)}
+          onPress={() => {
+            if (instanceURL.length > 0) {
+              checkForDemoInstance(instanceURL, navigation, showAlert);
+            };
+          }}
         />
         {(route.params?.method) && (
           <ButtonCta
