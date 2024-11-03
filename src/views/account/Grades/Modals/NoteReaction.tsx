@@ -215,20 +215,35 @@ const GradeReaction: Screen<"GradeReaction"> = ({ navigation, route }) => {
         </>
       )}
       {capturedImage ? (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.savebutton}
-            onPress={saveImage}
+        <View style={styles.actionContainer}>
+          <View
+            style={{
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+              gap: 50,
+            }}
           >
-            <Text style={styles.savebuttonText}>Enregistrer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={shareImage}
-          >
-            <Share2 size={24} color="#FFFFFF" />
-            <Text style={styles.buttonText}>Partager</Text>
-          </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.savebutton}
+                onPress={saveImage}
+              >
+                <Text style={styles.savebuttonText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={shareImage}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >Partager</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <TouchableOpacity
@@ -341,10 +356,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    height: 70,
-    paddingHorizontal: 83,
+    height: 60,
+    width: "100%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 200,
+    borderRadius: 10,
   },
   captureButtonInner: {
     borderRadius: 30,
@@ -358,8 +373,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     alignSelf: "center",
-    marginBottom: 10,
-    gap: 10,
+    marginHorizontal: 20,
+  },
+  actionContainer: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "center",
+    gap: 20,
+    alignItems: "center",
+    alignSelf: "center",
   },
   actionButton: {
     alignItems: "center",

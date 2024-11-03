@@ -1,6 +1,5 @@
 import createScreen from "@/router/helpers/create-screen";
 
-import NoteReaction from "@/views/account/NoteReaction";
 import SettingsTabs from "@/views/settings/SettingsTabs";
 import RestaurantQrCode from "@/views/account/Restaurant/Modals/QrCode";
 import NewsItem from "@/views/account/News/Document";
@@ -14,18 +13,15 @@ import Chat from "@/views/account/Chat/Modals/Chat";
 import HomeworksDocument from "@/views/account/Homeworks/Document";
 import LessonsImportIcal from "@/views/account/Lessons/Options/LessonsImportIcal";
 import LessonDocument from "@/views/account/Lessons/Document";
+import GradeReaction from "@/views/account/Grades/Modals/NoteReaction";
 
 export default [
-  createScreen("NoteReaction", NoteReaction, {
-    headerTitle: "",
-    headerTransparent: true,
-    presentation: "modal",
-  }),
   createScreen("RestaurantQrCode", RestaurantQrCode, {
     headerTitle: "",
     headerTransparent: true,
     presentation: "fullScreenModal",
   }),
+
   createScreen("RestaurantHistory", RestaurantHistory, {
     headerTitle: "",
     headerTransparent: true,
@@ -67,6 +63,11 @@ export default [
   }),
   createScreen("GradeDocument", GradeDocument, {
     headerTitle: "Détail de la note",
+    presentation: "modal",
+  }),
+  createScreen("GradeReaction", GradeReaction, {
+    headerTitle: "",
+    headerTransparent: true,
     presentation: "modal",
   }),
   createScreen("ChatCreate", ChatCreate, {
