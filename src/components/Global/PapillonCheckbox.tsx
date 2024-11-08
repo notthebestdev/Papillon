@@ -1,8 +1,8 @@
-import { View, Animated, Easing, type ViewStyle, type StyleProp } from "react-native";
+import { View, Animated, type ViewStyle, type StyleProp } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 
-import Reanimated, { LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
+import Reanimated, { LinearTransition, Easing, useAnimatedStyle, useSharedValue, withTiming, ZoomIn, ZoomOut } from "react-native-reanimated";
 import { PressableScale } from "react-native-pressable-scale";
 import { Svg, Circle, G } from "react-native-svg";
 import { Check } from "lucide-react-native";
@@ -16,7 +16,8 @@ interface CheckboxProps {
   onPress: () => unknown
   style?: StyleProp<ViewStyle>
   color?: string
-  loaded?: boolean
+  loaded?: boolean,
+  showAura?: boolean
 }
 
 const PapillonCheckbox: React.FC<CheckboxProps> = ({
@@ -25,7 +26,8 @@ const PapillonCheckbox: React.FC<CheckboxProps> = ({
   onPress,
   style,
   color,
-  loaded = true
+  loaded = true,
+  showAura = false,
 }) => {
   const theme = useTheme();
   const firstRender = useRef(true);
@@ -45,10 +47,44 @@ const PapillonCheckbox: React.FC<CheckboxProps> = ({
     setHasPressed(true);
   };
 
+  const auraScale = useSharedValue(0);
+  const auraOpacity = useSharedValue(1);
+
+  const animateAura = () => {
+    // scale up and fade out
+    auraScale.value = 0;
+    auraOpacity.value = 0.5;
+
+    // animate
+    auraScale.value = withTiming(0.6, {
+      duration: 800,
+      easing: Easing.out(Easing.quad),
+    });
+
+    setTimeout(() => {
+      auraOpacity.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.out(Easing.quad),
+      });
+    }, 400);
+  };
+
+  const animatedAuraStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: auraScale.value }],
+      opacity: auraOpacity.value,
+    };
+  });
+
   // on checked change
   useEffect(() => {
     if (checked && hasPressed && loaded) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (showAura) {
+        setTimeout(() => {
+          animateAura();
+        }, 100);
+      }
     }
   }, [checked, hasPressed]);
 
@@ -56,6 +92,18 @@ const PapillonCheckbox: React.FC<CheckboxProps> = ({
     <Reanimated.View
       layout={animPapillon(LinearTransition)}
     >
+      <Reanimated.View
+        style={[{
+          position: "absolute",
+          width: 100,
+          height: 100,
+          backgroundColor: color ? color + "80" : theme.colors.primary + "80",
+          borderRadius: 300,
+          top: -37,
+          left: -37,
+        }, animatedAuraStyle]}
+      />
+
       <PressableScale
         style={[{
           width: 26,

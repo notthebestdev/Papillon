@@ -135,6 +135,7 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
             style={{ marginRight: 1 }}
             color={subjectData.color}
             loaded={mainLoaded}
+            showAura={true}
           />
         </Reanimated.View>
       }
