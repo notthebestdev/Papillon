@@ -14,6 +14,9 @@ import HomeworksDocument from "@/views/account/Homeworks/Document";
 import LessonsImportIcal from "@/views/account/Lessons/Options/LessonsImportIcal";
 import LessonDocument from "@/views/account/Lessons/Document";
 import GradeReaction from "@/views/account/Grades/Modals/NoteReaction";
+import ScodocWebview from "@/views/login/IdentityProvider/actions/BackgroundIUTLannion";
+import ScodocBackgroundWebview from "@/views/login/IdentityProvider/actions/BackgroundIUTLannion";
+import BackgroundIUTLannion from "@/views/login/IdentityProvider/actions/BackgroundIUTLannion";
 
 export default [
   createScreen("RestaurantQrCode", RestaurantQrCode, {
@@ -76,6 +79,10 @@ export default [
   }),
   createScreen("Chat", Chat, {
     presentation: "modal",
-    headerShown: false
+    headerShown: false,
+  }),
+  createScreen("BackgroundIUTLannion", BackgroundIUTLannion, {
+    headerTitle: "IUT de Lannion",
+    presentation: "modal",
   }),
 ] as const;
