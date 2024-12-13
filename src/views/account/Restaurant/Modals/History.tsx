@@ -7,6 +7,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { FadeInDown, FadeOut } from "react-native-reanimated";
 import { RouteParameters } from "../../../../router/helpers/types";
 import { RouteProp } from "@react-navigation/native";
+import InsetsBottomView from "@/components/Global/InsetsBottomView";
 
 type NavigationProps = RouteProp<RouteParameters, "RestaurantHistory">;
 
@@ -18,26 +19,30 @@ const RestaurantHistory = ({ route }: { route: NavigationProps }) => {
     return date.toLocaleDateString("fr-FR", {
       weekday: "long",
       month: "long",
-      day: "numeric",
+      day: "numeric"
     }).toUpperCase();
   };
 
   const groupedHistories = useMemo(() => {
-    const historyMap = new Map();
+    const historyMap = new Map<string, ReservationHistory[]>();
+
+    histories.sort((a, b) => b.timestamp - a.timestamp);
+
     histories.forEach((history: ReservationHistory) => {
       const formattedDate = formatDate(history.timestamp);
       if (!historyMap.has(formattedDate)) {
         historyMap.set(formattedDate, []);
       }
-      historyMap.get(formattedDate).push(history);
+      historyMap.get(formattedDate)?.push(history);
     });
 
     historyMap.forEach((value) => {
-      value.sort((a: { timestamp: number; }, b: { timestamp: number; }) => b.timestamp - a.timestamp);
+      value.sort((a, b) => b.timestamp - a.timestamp);
     });
 
-    return Array.from(historyMap.entries()).sort(([a], [b]) => a - b);;
+    return Array.from(historyMap);
   }, [histories]);
+
 
   return (
     <ScrollView contentContainerStyle={styles.scrollViewContent}>
@@ -81,6 +86,7 @@ const RestaurantHistory = ({ route }: { route: NavigationProps }) => {
           </Fragment>
         ))
       )}
+      <InsetsBottomView />
     </ScrollView>
   );
 };
@@ -88,6 +94,7 @@ const RestaurantHistory = ({ route }: { route: NavigationProps }) => {
 const styles = StyleSheet.create({
   scrollViewContent: {
     padding: 16,
+    paddingTop: 0,
   },
   row: {
     flexDirection: "row",

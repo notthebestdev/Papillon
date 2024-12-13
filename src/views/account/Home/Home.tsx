@@ -59,6 +59,7 @@ import Header from "@/components/Home/Header";
 import {useBottomTabBarHeight} from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import ModalContent from "@/views/account/Home/ModalContent";
+import {AnimatedScrollView} from "react-native-reanimated/lib/typescript/reanimated2/component/ScrollView";
 
 const Home: Screen<"HomeScreen"> = ({ navigation }) => {
   const { colors } = useTheme();
@@ -66,7 +67,7 @@ const Home: Screen<"HomeScreen"> = ({ navigation }) => {
   const corners = useMemo(() => getCorners(), []);
   const focused = useIsFocused();
 
-  let scrollRef = useAnimatedRef();
+  let scrollRef = useAnimatedRef<AnimatedScrollView>();
   let scrollOffset = useScrollViewOffset(scrollRef);
 
   let account = useCurrentAccount(store => store.account!);
@@ -138,7 +139,7 @@ const Home: Screen<"HomeScreen"> = ({ navigation }) => {
     transform: [
       {scale: interpolate(
         scrollOffset.value,
-        [0, 100, 200, 260 + insets.top],
+        [0, 200, (260 + insets.top) - 40, 260 + insets.top],
         [1, 0.95, 0.95, 1],
         Extrapolation.CLAMP
       )},
@@ -274,7 +275,8 @@ const Home: Screen<"HomeScreen"> = ({ navigation }) => {
           style={widgetAnimatedStyle}
         >
           <Header
-            openAccountSwitcher={openAccSwitcher}
+            scrolled={false}
+            // openAccountSwitcher={openAccSwitcher}
             navigation={navigation}
           />
         </Animated.View>

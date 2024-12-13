@@ -106,9 +106,7 @@ const Settings: Screen<"Settings"> = ({ route, navigation }) => {
           icon: <Bell />,
           color: "#CF0029",
           label: "Notifications",
-          description: "Disponible prochainement",
           onPress: () => navigation.navigate("SettingsNotifications"),
-          disabled: !defined("enable_notifications"),
         },
         {
           icon: <Cable />,
@@ -187,8 +185,8 @@ const Settings: Screen<"Settings"> = ({ route, navigation }) => {
         {
           icon: <WandSparkles />,
           color: "#58A3C3",
-          label: "Papillon Magic",
-          description: "Beta",
+          label: "Papillon Magic (Bêta)",
+          description: "Fonctionnalités intelligentes",
           onPress: () => navigation.navigate("SettingsMagic"),
         },
       ],
@@ -416,7 +414,7 @@ const Settings: Screen<"Settings"> = ({ route, navigation }) => {
             marginTop: 24,
           }}
         >
-          version {AppJSON.expo.version} {Platform.OS} {"\n"}
+          version {AppJSON.expo.version} {Platform.OS} {__DEV__ ? "(développeur)" : ""} {"\n"}
           fabriqué avec ❤️ par les contributeurs Papillon
         </Text>
       </Reanimated.ScrollView>

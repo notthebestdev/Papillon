@@ -12,17 +12,18 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { Homework, HomeworkReturnType } from "@/services/shared/Homework";
 import { getSubjectData } from "@/services/shared/Subject";
 
 import { formatDistance } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Link, Paperclip, CircleAlert } from "lucide-react-native";
+import { FileText, Link, Paperclip, CircleAlert, FileIcon } from "lucide-react-native";
 
 import * as WebBrowser from "expo-web-browser";
 import { useTheme } from "@react-navigation/native";
-import RenderHTML from "react-native-render-html";
+import HTMLView from "react-native-htmlview";
 import { Screen } from "@/router/helpers/types";
 import { WebBrowserPresentationStyle } from "expo-web-browser/src/WebBrowser.types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,9 +31,23 @@ import { PapillonModernHeader } from "@/components/Global/PapillonModernHeader";
 import { useCurrentAccount } from "@/stores/account";
 import { AccountService } from "@/stores/account/types";
 import getAndOpenFile from "@/utils/files/getAndOpenFile";
+import LinkFavicon, { getURLDomain } from "@/components/Global/LinkFavicon";
+import { AutoFileIcon } from "@/components/Global/FileIcon";
 
 const HomeworksDocument: Screen<"HomeworksDocument"> = ({ route }) => {
   const theme = useTheme();
+  const stylesText = StyleSheet.create({
+    body: {
+      color: theme.colors.text,
+      fontFamily: "medium",
+      fontSize: 16,
+      lineHeight: 22,
+    },
+    a: {
+      color: theme.colors.primary,
+      textDecorationLine: "underline",
+    },
+  });
 
   const homework: Homework = route.params.homework || {};
   const account = useCurrentAccount((store) => store.account!);
@@ -160,17 +175,10 @@ const HomeworksDocument: Screen<"HomeworksDocument"> = ({ route }) => {
           )}
 
           <NativeItem>
-            <RenderHTML
-              source={{ html: homework.content }}
-              defaultTextProps={{
-                style: {
-                  color: theme.colors.text,
-                  fontFamily: "medium",
-                  fontSize: 16,
-                  lineHeight: 22,
-                },
-              }}
-              contentWidth={300}
+            <HTMLView
+              value={`<body>${homework.content}</body>`}
+              stylesheet={stylesText}
+              onLinkPress={(url) => openUrl(url)}
             />
           </NativeItem>
         </NativeList>
@@ -184,10 +192,10 @@ const HomeworksDocument: Screen<"HomeworksDocument"> = ({ route }) => {
                 <NativeItem
                   key={index}
                   onPress={() => openUrl(attachment.url)}
-                  icon={attachment.type === "file" ? <FileText /> : <Link />}
+                  icon={attachment.type === "file" ? <AutoFileIcon filename={attachment.name} /> : <LinkFavicon url={attachment.url} />}
                 >
                   <NativeText variant="title" numberOfLines={2}>
-                    {attachment.name}
+                    {attachment.name || getURLDomain(attachment.url, true)}
                   </NativeText>
                   <NativeText variant="subtitle" numberOfLines={1}>
                     {attachment.url}

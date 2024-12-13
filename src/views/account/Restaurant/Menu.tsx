@@ -5,10 +5,12 @@ import {
   StyleSheet,
   Switch,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import {
+  AlertTriangle,
   Clock2,
   QrCode,
   Utensils,
@@ -41,6 +43,7 @@ import { LessonsDateModal } from "../Lessons/LessonsHeader";
 import { BookingTerminal, BookingDay } from "@/services/shared/Booking";
 import { bookDayFromExternal, getBookingsAvailableFromExternal } from "@/services/booking";
 import AccountButton from "@/components/Restaurant/AccountButton";
+import InsetsBottomView from "@/components/Global/InsetsBottomView";
 
 const Menu: Screen<"Menu"> = ({ route, navigation }) => {
   const theme = useTheme();
@@ -48,6 +51,9 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
 
   const account = useCurrentAccount((store) => store.account);
   const linkedAccounts = useCurrentAccount((store) => store.linkedAccounts);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const [allBalances, setAllBalances] = useState<Balance[] | null>(null);
   const [allHistories, setAllHistories] = useState<ReservationHistory[] | null>(null);
@@ -60,6 +66,11 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
   const [isMenuLoading, setMenuLoading] = useState(false);
   const [isInitialised, setIsInitialised] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
+
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    setRefreshCount(refreshCount + 1);
+  };
 
   const getWeekNumber = (date: Date) => {
     const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
@@ -81,7 +92,7 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
       setAllBookings(allBookings);
     }
 
-    const dailyMenu = account ? await getMenu(account, date) : null;
+    const dailyMenu = account ? await getMenu(account, date).catch(() => null) : null;
     setCurrentMenu(dailyMenu);
     setMenuLoading(false);
   };
@@ -132,7 +143,7 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
         const newQRCodes: string[] = [];
         const newBookings: BookingTerminal[] = [];
 
-        const dailyMenu = account ? await getMenu(account, pickerDate) : null;
+        const dailyMenu = account ? await getMenu(account, pickerDate).catch(() => null) : null;
         const accountPromises = linkedAccounts.map(async (account) => {
           try {
             const [balance, history, cardnumber, booking] = await Promise.all([
@@ -160,41 +171,60 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
             if (cardnumber) newQRCodes.push(cardnumber);
 
           } catch (error) {
+            setIsInitialised(true);
             console.warn(`An error occurred with account ${account}:`, error);
           }
         });
 
         await Promise.all(accountPromises);
-        setAllBalances(newBalances);
+        setAllBalances(newBalances.sort((a, b) => a.label.toLowerCase() === "cafetaria" ? 1 : -1));
         setAllHistories(newHistories);
         setAllQRCodes(newQRCodes);
         setAllBookings(newBookings);
         setCurrentMenu(dailyMenu);
         setIsInitialised(true);
+        setIsRefreshing(false);
       } catch (error) {
         console.warn("An error occurred while fetching data:", error);
       }
     })();
-  }, [linkedAccounts]);
+  }, [linkedAccounts, refreshCount]);
+
+  const fetchQRCode = async () => {
+    if (linkedAccounts) {
+      const qrCodes = await Promise.all(linkedAccounts.map(qrcodeFromExternal));
+      setAllQRCodes(qrCodes.filter((code) => code !== null) as string[]);
+    }
+  };
+
+  useEffect(() => {
+    // force la regénération du QR code à chaque fois que l'écran est affiché
+    const unsub = navigation.addListener("focus", fetchQRCode);
+    return unsub;
+  }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollViewContent}>
+    <ScrollView
+      contentContainerStyle={styles.scrollViewContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={() => {
+            refreshData();
+          }}
+        />
+      }
+    >
       {!isInitialised ? (
         <ActivityIndicator size="large" style={{ padding: 50 }} />
       ) : (
         <>
           {allBalances?.length === 0 ? (
-            <MissingItem
-              emoji="🤔"
-              title="Vous n'avez lié aucun compte"
-              description="Pour accéder à la cantine, vous devez lier un compte dans l'onglet services externes."
-              entering={animPapillon(FadeInDown)}
-              exiting={animPapillon(FadeOut)}
-            />
+            <View style={{height: 10}} />
           ) : (
             <>
               <View style={styles.accountButtonContainer}>
-                {allBalances?.map((account, index) => (
+                {allBalances!.length > 1 && allBalances?.map((account, index) => (
                   <AccountButton
                     key={index}
                     account={account}
@@ -213,7 +243,11 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
                 >
                   <RestaurantCard
                     solde={allBalances[selectedIndex].amount}
-                    repas={allBalances[selectedIndex].remaining || null }
+                    repas={
+                      allBalances?.[selectedIndex]?.remaining != null
+                        ? Math.max(0, allBalances[selectedIndex].remaining || 0)
+                        : null
+                    }
                   />
                 </Reanimated.View>
               )}
@@ -235,6 +269,7 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
             />
           </HorizontalList>
 
+          {(currentMenu || (allBookings && allBookings.some((terminal) => terminal.days.some((day) => day.date.toDateString() === pickerDate.toDateString())))) &&
           <View style={styles.calendarContainer}>
             <PapillonHeaderSelector loading={isMenuLoading} onPress={() => setShowDatePicker(true)}>
               <Reanimated.View layout={animPapillon(LinearTransition)}>
@@ -254,6 +289,7 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
               </Reanimated.Text>
             </PapillonHeaderSelector>
           </View>
+          }
 
           {allBookings && allBookings.some((terminal) => terminal.days.some((day) => day.date.toDateString() === pickerDate.toDateString())) && (
             <>
@@ -287,51 +323,76 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
             </>
           )}
 
-          {isMenuLoading ? (
-            <ActivityIndicator size="large" style={{ padding: 50 }} />
-          ) : currentMenu?.lunch ? (
+          <View style={{ height: 16 }} />
+
+          {currentMenu ?
             <>
-              <NativeListHeader label="Menus du jour" />
-              <NativeList>
-                {[
-                  { title: "Entrée", items: currentMenu.lunch.entry },
-                  { title: "Plat", items: currentMenu.lunch.main },
-                  { title: "Fromage", items: currentMenu.lunch.fromage },
-                  { title: "Dessert", items: currentMenu.lunch.dessert },
-                  { title: "Boisson", items: currentMenu.lunch.drink },
-                ].map(({ title, items }, index) =>
-                  items && (
-                    <NativeItem key={index}>
-                      <NativeText variant="subtitle">{title}</NativeText>
-                      {items.map((food, idx) => (
-                        <NativeText key={idx} variant="title">{food.name ?? ""}</NativeText>
-                      ))}
-                    </NativeItem>
-                  )
-                )}
-              </NativeList>
+              {isMenuLoading ? (
+                <ActivityIndicator size="large" style={{ padding: 50 }} />
+              ) : currentMenu?.lunch ? (
+                <>
+                  <NativeListHeader label="Menus du jour" />
+                  <NativeList>
+                    {[
+                      { title: "Entrée", items: currentMenu.lunch.entry },
+                      { title: "Plat", items: currentMenu.lunch.main },
+                      { title: "Accompagnement", items: currentMenu.lunch.side},
+                      { title: "Fromage", items: currentMenu.lunch.fromage },
+                      { title: "Dessert", items: currentMenu.lunch.dessert },
+                      { title: "Boisson", items: currentMenu.lunch.drink },
+                    ].map(({ title, items }, index) =>
+                      items && (
+                        <NativeItem key={index}>
+                          <NativeText variant="subtitle">{title}</NativeText>
+                          {items.map((food, idx) => (
+                            <>
+                              <NativeText key={idx} variant="title">{food.name ?? ""}</NativeText>
+                              {food.allergens.length > 0 && (
+                                <View style={styles.allergensContainer}>
+                                  <AlertTriangle size={16} color={colors.text} opacity={0.6}/>
+                                  <NativeText key={"allergens-"+idx} variant="subtitle">Allergènes : {food.allergens.join(", ")}</NativeText>
+                                </View>
+                              )}
+                            </>
+                          ))}
+                        </NativeItem>
+                      )
+                    )}
+                  </NativeList>
+                </>
+              ) : (
+                <MissingItem
+                  emoji="🍽️"
+                  title="Aucun menu prévu"
+                  description={`Malheureusement, aucun menu n'est prévu pour le ${pickerDate.toLocaleDateString("fr-FR", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}.`}
+                  entering={animPapillon(FadeInDown)}
+                  exiting={animPapillon(FadeOut)}
+                  style={{ marginTop: 16 }}
+                />
+              )}
             </>
-          ) : (
-            <MissingItem
-              emoji="❌"
-              title="Aucun menu prévu"
-              description={`Malheureusement, aucun menu n'est prévu pour le ${pickerDate.toLocaleDateString("fr-FR", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}.`}
-              entering={animPapillon(FadeInDown)}
-              exiting={animPapillon(FadeOut)}
-              style={{ marginTop: 16 }}
-            />
-          )}
+            : <>
+              <MissingItem
+                emoji="🍽️"
+                title="Aucun menu disponible"
+                description={"Aucun service de cantine fournissant un menu n'est enregistré."}
+                entering={animPapillon(FadeInDown)}
+                exiting={animPapillon(FadeOut)}
+                style={{ marginTop: 16 }}
+              />
+            </>}
 
           <LessonsDateModal
             showDatePicker={showDatePicker}
             setShowDatePicker={setShowDatePicker}
             currentDate={pickerDate}
-            onDateSelect={(date: Date) => {
+            onDateSelect={(date: Date | undefined) => {
+              if (!date) return;
               const newDate = new Date(date);
               newDate.setHours(0, 0, 0, 0);
               setPickerDate(newDate);
@@ -341,16 +402,19 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
           />
         </>
       )}
+
+      <InsetsBottomView />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollViewContent: { padding: 16 },
+  scrollViewContent: { padding: 16, paddingTop: 0 },
   accountButtonContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 },
   horizontalList: { marginTop: 10 },
   calendarContainer: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 16, marginBottom: -10, gap: 10 },
   weekPickerText: { zIndex: 10000, fontSize: 14.5, fontFamily: "medium", opacity: 0.7 },
+  allergensContainer: { display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }
 });
 
 export default Menu;

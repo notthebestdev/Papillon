@@ -113,7 +113,7 @@ const NextCourseLesson: React.FC<{
   }, [nextCourse.title]);
 
   useEffect(() => {
-    const updateRemainingTime = () => {
+    const updateRemainingTime: () => number | NodeJS.Timeout = () => {
       const now = new Date().getTime();
       const distance = nextCourse.startTimestamp - now;
       const end = nextCourse.endTimestamp - now;
@@ -147,12 +147,12 @@ const NextCourseLesson: React.FC<{
       nextMinute.setMilliseconds(0);
       nextMinute.setMinutes(nextMinute.getMinutes() + 1);
       const delay = nextMinute.getTime() - now;
-      setTimeout(updateRemainingTime, delay);
+      return setTimeout(updateRemainingTime, delay);
     };
 
-    updateRemainingTime();
+    const timeout = updateRemainingTime();
 
-    return () => clearTimeout(updateRemainingTime);
+    return () => clearTimeout(timeout);
   }, [nextCourse, setWidgetTitle]);
 
   return (
@@ -170,8 +170,19 @@ const NextCourseLesson: React.FC<{
           borderCurve: "continuous",
           alignSelf: "flex-start",
         }}>
-          <Text numberOfLines={1} style={{ color: subjectData.color, fontSize: 15, fontFamily: "semibold" }}>
-            {nextCourse.room}
+          <Text
+            numberOfLines={1}
+            style={{
+              color: subjectData.color,
+              fontSize: 15,
+              fontFamily: "semibold",
+            }}
+          >
+            {nextCourse.room
+              ? nextCourse.room.includes(",")
+                ? "Plusieurs salles dispo."
+                : nextCourse.room
+              : "Salle inconnue"}
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, opacity: 0.5 }}>

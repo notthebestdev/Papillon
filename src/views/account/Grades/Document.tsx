@@ -7,8 +7,10 @@ import {
 import { getSubjectData } from "@/services/shared/Subject";
 import { useTheme } from "@react-navigation/native";
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Dimensions, Image, Pressable, ScrollView, Text, View, Platform } from "react-native";
 import { GradeTitle } from "./Atoms/GradeTitle";
+import * as SystemUI from "expo-system-ui";
+import * as StoreReview from "expo-store-review";
 import {
   Asterisk,
   Calculator,
@@ -23,6 +25,7 @@ import { getAverageDiffGrade } from "@/utils/grades/getAverages";
 import type { AverageDiffGrade } from "@/utils/grades/getAverages";
 import { Screen } from "@/router/helpers/types";
 import InsetsBottomView from "@/components/Global/InsetsBottomView";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GradeDocument: Screen<"GradeDocument"> = ({ route, navigation }) => {
   const { grade, allGrades = [] } = route.params;
@@ -33,6 +36,47 @@ const GradeDocument: Screen<"GradeDocument"> = ({ route, navigation }) => {
     pretty: "Matière inconnue",
     emoji: "❓",
   });
+
+  const [shouldShowReviewOnClose, setShouldShowReviewOnClose] = useState(false);
+
+  const askForReview = async () => {
+    StoreReview.isAvailableAsync().then((available) => {
+      if (available) {
+        StoreReview.requestReview();
+      }
+    });
+  };
+
+  // on modal closed
+  useEffect(() => {
+    navigation.addListener("beforeRemove", (e) => {
+      if (shouldShowReviewOnClose) {
+        AsyncStorage.getItem("review_given").then((value) => {
+          if(!value) {
+            console.log("Asking for review");
+            askForReview();
+            AsyncStorage.setItem("review_given", "true");
+          }
+        });
+      }
+    });
+  });
+
+  useEffect(() => {
+    AsyncStorage.getItem("review_openGradeCount").then((value) => {
+      if (value) {
+        if (parseInt(value) >= 5) {
+          AsyncStorage.setItem("review_openGradeCount", "0");
+          setShouldShowReviewOnClose(true);
+        }
+        else {
+          AsyncStorage.setItem("review_openGradeCount", (parseInt(value) + 1).toString());
+        }
+      } else {
+        AsyncStorage.setItem("review_openGradeCount", "1");
+      }
+    });
+  }, []);
 
   const fetchSubjectData = () => {
     const data = getSubjectData(grade.subjectName);
@@ -46,14 +90,10 @@ const GradeDocument: Screen<"GradeDocument"> = ({ route, navigation }) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "Note en " + subjectData.pretty,
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("GradeReaction", { grade })
-          }>
-          <Camera size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-      ),
+      headerStyle: {
+        backgroundColor: Platform.OS === "android" ? subjectData.color : undefined,
+      },
+      headerTintColor: "#ffffff",
     });
   }, [navigation, subjectData]);
 
@@ -136,7 +176,7 @@ const GradeDocument: Screen<"GradeDocument"> = ({ route, navigation }) => {
         !grade.student.disabled && {
           icon: <Scale />,
           title: "Moyenne générale",
-          description: "Impact de la note sur la moyenne générale",
+          description: "Impact estimé sur la moyenne générale",
           value:
 						gradeDiff.difference === undefined
 						  ? "???"
@@ -176,72 +216,218 @@ const GradeDocument: Screen<"GradeDocument"> = ({ route, navigation }) => {
   ];
 
   return (
-    <ScrollView
+    <View
       style={{
         flex: 1,
-        padding: 16,
-        paddingTop: 0,
       }}
-      contentInsetAdjustmentBehavior="automatic"
     >
-      <GradeTitle grade={grade} subjectData={subjectData} />
+      <View
+        style={{
+          borderCurve: "continuous",
+          minHeight: 180,
+          backgroundColor: subjectData.color,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "#00000043",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: -1,
+          }}
+        >
+          <Image
+            source={require("../../../../assets/images/mask_stars_settings.png")}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              tintColor: "#ffffff",
+              opacity: 0.15,
+            }}
+          />
+        </View>
 
-      {lists.map((list, index) => (
-        <View key={index}>
-          <NativeListHeader label={list.title} />
+        {Platform.OS === "ios" &&
+            <View
+              style={{
+                backgroundColor: "#ffffff",
+                width: 60,
+                height: 4,
+                borderRadius: 2,
+                alignSelf: "center",
+                opacity: 0.3,
+                marginVertical: 8,
+              }}
+            />
+        }
 
-          <NativeList>
-            {list.items.map(
-              (item, index) =>
-                item && (
-                  <NativeItem
-                    key={index}
-                    icon={item.icon}
-                    trailing={
-                      <View
-                        style={{
-                          marginRight: 10,
-                          alignItems: "flex-end",
-                          flexDirection: "row",
-                          gap: 2,
-                        }}
-                      >
-                        <NativeText
-                          style={{
-                            fontSize: 18,
-                            lineHeight: 22,
-                            fontFamily: "semibold",
-                            color:
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+            gap: 6,
+            flex: 1,
+            justifyContent: "flex-end",
+          }}
+        >
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 14,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              fontFamily: "semibold",
+              opacity: 0.6,
+            }}
+            numberOfLines={1}
+          >
+            {subjectData.pretty}
+          </Text>
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 17,
+              fontFamily: "semibold",
+              opacity: 1,
+            }}
+            numberOfLines={1}
+          >
+            {grade.description || "Note sans description"}
+          </Text>
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 15,
+              fontFamily: "medium",
+              opacity: 0.6,
+            }}
+            numberOfLines={1}
+          >
+            {new Date(grade.timestamp).toLocaleDateString("fr-FR", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </Text>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "flex-start",
+              gap: 2,
+              marginTop: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 28,
+                fontFamily: "semibold",
+                opacity: 1,
+              }}
+              numberOfLines={1}
+            >
+              {grade.student.disabled ? "N. not" : grade.student.value?.toFixed(2)}
+            </Text>
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 18,
+                fontFamily: "medium",
+                opacity: 0.6,
+                marginBottom: 1,
+              }}
+              numberOfLines={1}
+            >
+              /{grade.outOf.value}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        style={{
+          flex: 1,
+          width: "100%",
+          maxWidth: 500,
+          backgroundColor: theme.colors.background,
+          borderCurve: "continuous",
+          overflow: "hidden",
+        }}
+        contentContainerStyle={{
+          width: "100%",
+        }}
+      >
+        <View
+          style={{
+            paddingHorizontal: 16,
+          }}
+        >
+
+          {lists.map((list, index) => (
+            <View key={index}>
+              <NativeListHeader label={list.title} />
+
+              <NativeList>
+                {list.items.map(
+                  (item, index) =>
+                    item && (
+                      <NativeItem
+                        key={index}
+                        icon={item.icon}
+                        trailing={
+                          <View
+                            style={{
+                              marginRight: 10,
+                              alignItems: "flex-end",
+                              flexDirection: "row",
+                              gap: 2,
+                            }}
+                          >
+                            <NativeText
+                              style={{
+                                fontSize: 18,
+                                lineHeight: 22,
+                                fontFamily: "semibold",
+                                color:
 															"color" in item ? item.color : theme.colors.text,
-                          }}
-                        >
-                          {item.value}
-                        </NativeText>
+                              }}
+                            >
+                              {item.value}
+                            </NativeText>
 
-                        {"bareme" in item && (
+                            {"bareme" in item && (
+                              <NativeText variant="subtitle">
+                                {item.bareme}
+                              </NativeText>
+                            )}
+                          </View>
+                        }
+                      >
+                        <NativeText variant="overtitle">{item.title}</NativeText>
+
+                        {item.description && (
                           <NativeText variant="subtitle">
-                            {item.bareme}
+                            {item.description}
                           </NativeText>
                         )}
-                      </View>
-                    }
-                  >
-                    <NativeText variant="overtitle">{item.title}</NativeText>
-
-                    {item.description && (
-                      <NativeText variant="subtitle">
-                        {item.description}
-                      </NativeText>
-                    )}
-                  </NativeItem>
-                )
-            )}
-          </NativeList>
+                      </NativeItem>
+                    )
+                )}
+              </NativeList>
+            </View>
+          ))}
         </View>
-      ))}
 
-      <InsetsBottomView />
-    </ScrollView>
+        <InsetsBottomView />
+      </ScrollView>
+    </View>
   );
 };
 

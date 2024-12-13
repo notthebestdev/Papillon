@@ -8,13 +8,16 @@ import { useTheme } from "@react-navigation/native";
 import React from "react";
 import { Alert, Button, View } from "react-native";
 import { WebView } from "react-native-webview";
+import type { Screen } from "@/router/helpers/types";
+import { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import { animPapillon } from "@/utils/ui/animations";
 
 const capitalizeFirst = (str: string) => {
   str = str.toLowerCase();
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-const BackgroundIUTLannion = ({ route, navigation }) => {
+const BackgroundIUTLannion: Screen<"BackgroundIUTLannion"> = ({ route, navigation }) => {
   const params = route.params;
   let username = params?.username || null;
   let password = params?.password || null;
@@ -25,8 +28,10 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
   const firstLogin = params?.firstLogin || false;
   const theme = useTheme();
 
+  const [step, setStep] = React.useState("Chargement du portail");
+
   if(!firstLogin) {
-    if(account.credentials) {
+    if(account?.service == AccountService.Local && account.credentials) {
       username = account.credentials.username;
       password = account.credentials.password;
     }
@@ -39,7 +44,7 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
   const switchTo = useCurrentAccount(store => store.switchTo);
   const mutateProperty = useCurrentAccount(store => store.mutateProperty);
 
-  const useData = async (data) => {
+  const useData = async (data: any) => {
     if(firstLogin) {
       await actionFirstLogin(data);
     }
@@ -54,7 +59,7 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
     }
   };
 
-  const actionFirstLogin = async (data) => {
+  const actionFirstLogin = async (data: any) => {
     console.log("First login");
     console.log(data);
 
@@ -69,8 +74,8 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
       },
 
       credentials: {
-        username,
-        password
+        username: username || "",
+        password: password || ""
       },
 
       localID: uuid(),
@@ -104,7 +109,7 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
     });
   };
 
-  const wbref = React.useRef(null);
+  const wbref = React.useRef<WebView>(null);
 
   const [canExtractJSON, setCanExtractJSON] = React.useState(false);
   const [redirectCount, setRedirectCount] = React.useState(0);
@@ -120,10 +125,12 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
       return;
     }
 
+    setStep("Connexion à Sésame");
+
     const newRedirCount = redirectCount + 1;
     setRedirectCount(newRedirCount);
 
-    wbref.current.injectJavaScript(`
+    wbref.current?.injectJavaScript(`
             // fill input id=username
             document.getElementById("username").value = "${username}";
             // fill input id=password
@@ -135,7 +142,8 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
   };
 
   const redirectToData = () => {
-    wbref.current.injectJavaScript(`
+    setStep("Récupération des données");
+    wbref.current?.injectJavaScript(`
               window.location.href = "https://notes9.iutlan.univ-rennes1.fr/services/data.php?q=dataPremièreConnexion";
             `);
   };
@@ -158,10 +166,14 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
           gap: 6,
         }}
       >
-        <PapillonSpinner size={56} strokeWidth={5} />
+        <PapillonSpinner size={56} strokeWidth={5} color={theme.colors.primary} />
         <View style={{ height: 10 }} />
-        <NativeText variant="title">
-          En attente du portail
+        <NativeText variant="title" key={step}
+          animated
+          entering={animPapillon(FadeInDown)}
+          exiting={animPapillon(FadeOutUp)}
+        >
+          {step}
         </NativeText>
         <NativeText variant="subtitle">
           Cela peut prendre quelques secondes...
@@ -188,7 +200,7 @@ const BackgroundIUTLannion = ({ route, navigation }) => {
           }
 
           if(url.startsWith("https://notes9.iutlan.univ-rennes1.fr/services/data.php")) {
-            wbref.current.injectJavaScript(`
+            wbref.current?.injectJavaScript(`
                 window.ReactNativeWebView.postMessage(document.body.innerText);
               `);
           }

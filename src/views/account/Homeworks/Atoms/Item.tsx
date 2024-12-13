@@ -1,20 +1,22 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Paperclip } from "lucide-react-native";
+import {Clock, Paperclip, Sparkles} from "lucide-react-native";
 import { getSubjectData } from "@/services/shared/Subject";
-import { useTheme } from "@react-navigation/native";
+import { useRoute, useTheme} from "@react-navigation/native";
 import { NativeItem, NativeText } from "@/components/Global/NativeComponents";
 import PapillonCheckbox from "@/components/Global/PapillonCheckbox";
 import Reanimated, { LinearTransition } from "react-native-reanimated";
 import { FadeIn, FadeOut } from "react-native-reanimated";
 import { animPapillon } from "@/utils/ui/animations";
-import RenderHTML from "react-native-render-html";
+import HTMLView from "react-native-htmlview";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteParameters } from "@/router/helpers/types";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Homework, HomeworkReturnType } from "@/services/shared/Homework";
 import detectCategory from "@/utils/magic/categorizeHomeworks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCurrentAccount } from "@/stores/account";
+import LinkFavicon, { getURLDomain } from "@/components/Global/LinkFavicon";
+import { AutoFileIcon } from "@/components/Global/FileIcon";
 
 interface HomeworkItemProps {
   key: number | string
@@ -30,6 +32,17 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
   const [subjectData, setSubjectData] = useState(getSubjectData(homework.subject));
   const [category, setCategory] = useState<string | null>(null);
   const account = useCurrentAccount((store) => store.account!);
+
+  const route = useRoute();
+
+  const stylesText = StyleSheet.create({
+    body: {
+      color: homework.done ? theme.colors.text + "80" : theme.colors.text,
+      fontFamily: "medium",
+      fontSize: 16,
+      lineHeight: 22,
+    }
+  });
 
   useEffect(() => {
     if (account.personalization?.MagicHomeworks) {
@@ -56,12 +69,25 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
     setMainLoaded(true);
   }, [homework.done]);
 
+  const timestampToString = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+
+    const difference = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return difference === 0 ? "Aujourd'hui" : difference === 1 ? "Demain" : difference === 2 ? "Après-demain" : `Dans ${difference} jours`;
+  };
+
   const renderCategoryOrReturnType = () => {
     if (category) {
       return (
         <LinearGradient
-          colors={[subjectData.color, subjectData.color + "80"]}
-          style={{ borderRadius: 50, zIndex: 10 }}
+          colors={[subjectData.color + "80", subjectData.color]}
+          style={{
+            borderRadius: 50,
+            zIndex: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.text + "20",
+          }}
         >
           <View
             style={{
@@ -73,9 +99,16 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
               borderRadius: 8,
             }}
           >
+            <Sparkles
+              size={14}
+              strokeWidth={1.5}
+              fill={"#FFF"}
+              color="#FFF"
+            />
+
             <NativeText style={{
               color: "#FFF",
-              fontFamily: "medium",
+              fontFamily: "semibold",
               fontSize: 15,
               lineHeight: 18,
             }}
@@ -156,19 +189,21 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200).delay(50)}
           >
-            <RenderHTML
-              source={{ html: homework.content }}
-              defaultTextProps={{
-                style: {
-                  color: theme.colors.text,
-                  fontFamily: "medium",
-                  fontSize: 16,
-                  lineHeight: 22,
-                },
-                numberOfLines: 3,
-              }}
-              contentWidth={300}
+            <HTMLView
+              value={`<body>${homework.content}</body>`}
+              stylesheet={stylesText}
             />
+            {route.name === "HomeScreen" && (
+              <View style={{ flex: 1, flexDirection: "row", gap: 4, paddingBottom: 4, paddingTop: 8, alignItems: "center", alignSelf: "flex-start" }}>
+                <Clock
+                  size={18}
+                  strokeWidth={2.5}
+                  opacity={0.6}
+                  color={theme.colors.text}
+                />
+                <NativeText style={{color: theme.colors.text, opacity:0.5}}>{timestampToString(homework.due)}</NativeText>
+              </View>
+            )}
           </Reanimated.View>
           {homework.attachments.length > 0 && (
             <Reanimated.View
@@ -188,16 +223,28 @@ const HomeworkItem = ({ homework, navigation, onDonePressHandler, index, total }
                 marginRight: 16,
               }}
             >
-              <Paperclip
-                size={18}
-                strokeWidth={2.5}
-                opacity={0.6}
-                color={theme.colors.text}
-              />
+              {(homework.attachments.length > 1) ?
+                <Paperclip
+                  size={20}
+                  strokeWidth={2.5}
+                  color={theme.colors.text+"80"}
+                />
+                :
+                (homework.attachments[0].type == "file") ?
+                  <AutoFileIcon
+                    size={20}
+                    strokeWidth={2.5}
+                    color={theme.colors.text}
+                    opacity={0.7}
+                    filename={homework.attachments[0].name}
+                  />
+                  :
+                  <LinkFavicon size={20} url={homework.attachments[0].url} />
+              }
               <NativeText variant="subtitle" numberOfLines={1}>
                 {homework.attachments.length > 1 ?
                   `${homework.attachments.length} pièces jointes` :
-                  homework.attachments[0].name
+                  homework.attachments[0].name || getURLDomain(homework.attachments[0].url, true)
                 }
               </NativeText>
             </Reanimated.View>

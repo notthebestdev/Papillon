@@ -10,12 +10,14 @@ import {
 } from "@/utils/grades/getAverages";
 import { useTheme } from "@react-navigation/native";
 import React, { useRef, useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet, Platform, Alert, TouchableOpacity, Linking } from "react-native";
 
 import Reanimated, {
   FadeIn,
   FadeInDown,
+  FadeInLeft,
   FadeOut,
+  FadeOutLeft,
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
@@ -29,15 +31,18 @@ const ReanimatedGraph: React.ForwardRefExoticComponent<ReanimatedGraphProps & Re
 import { useCurrentAccount } from "@/stores/account";
 import AnimatedNumber from "@/components/Global/AnimatedNumber";
 import type { Grade } from "@/services/shared/Grade";
+import { AlertTriangle } from "lucide-react-native";
 
 interface GradesAverageGraphProps {
   grades: Grade[];
   overall: number | null;
+  classOverall: number | null;
 }
 
 const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
   grades,
   overall,
+  classOverall,
 }) => {
   const theme = useTheme();
   const account = useCurrentAccount((store) => store.account!);
@@ -73,10 +78,13 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
     let hst = getAveragesHistory(grades, "student", overall ?? void 0);
     if (hst.length === 0) return;
 
-    let cla = getAveragesHistory(grades, "average");
+    let cla = getAveragesHistory(grades, "average", classOverall ?? void 0);
 
     let maxAvg = getPronoteAverage(grades, "max");
     let minAvg = getPronoteAverage(grades, "min");
+
+    const finalAvg = getPronoteAverage(grades, "student");
+    console.log("finalAvg", finalAvg);
 
     setGradesHistory(hst);
     setHLength(hst.length);
@@ -115,6 +123,14 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
     setCurrentAvg(originalCurrentAvgRef.current);
   }, [originalCurrentAvgRef]);
 
+  const theoryAvgDisclaimer = useCallback(() => {
+    Alert.alert(
+      "Moyenne théorique",
+      "La moyenne théorique est calculée en prenant en compte toutes les moyennes de tes matières. Elle est donc purement indicative et ne reflète pas la réalité des différentes options ou variations.",
+      [{ text: "Compris" }]
+    );
+  }, []);
+
   return (
     <PressableScale
       style={{
@@ -130,6 +146,51 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
             layout={animPapillon(LinearTransition)}
             key={theme.colors.primary + account.instance}
           >
+            {((showDetails && !overall) || selectedDate) && (
+              <Reanimated.View
+                style={{
+                  height: 10,
+                }}
+              />
+            )}
+
+            {((showDetails && !overall) || selectedDate) && (
+              <TouchableOpacity
+                onPress={() => {
+                  Linking.openURL("https://docs.papillon.bzh/kb/averages");
+                }}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  zIndex: 100,
+                }}
+              >
+                <Reanimated.View
+                  style={{
+                    backgroundColor: theme.colors.primary + "22",
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 8,
+                    borderCurve: "continuous",
+                    zIndex: 100,
+                  }}
+                  entering={animPapillon(FadeInLeft)}
+                  exiting={animPapillon(FadeOutLeft)}
+                >
+                  <Reanimated.Text
+                    style={{
+                      fontSize: 14,
+                      color: theme.colors.primary,
+                      fontFamily: "semibold",
+                    }}
+                  >
+                    Estimation
+                  </Reanimated.Text>
+                </Reanimated.View>
+              </TouchableOpacity>
+            )}
+
             {hLength > 1 ? (
               <Reanimated.View
                 layout={animPapillon(LinearTransition)}
@@ -204,8 +265,29 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
                     key={"cAvgG"}
                     entering={animPapillon(FadeInDown)}
                     exiting={animPapillon(FadeOutUp)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
                   >
-                    <NativeText numberOfLines={1}>Moyenne gén.</NativeText>
+                    <NativeText numberOfLines={1}>
+                      {(!overall || selectedDate) ? (
+                        "Moyenne estimée"
+                      ) : (
+                        "Moyenne gén."
+                      )}
+                    </NativeText>
+
+
+
+                    {(!overall || selectedDate) && (
+                      <AlertTriangle
+                        size={16}
+                        color={theme.colors.primary}
+                        strokeWidth={2.5}
+                      />
+                    )}
                   </Reanimated.View>
                 )}
 
@@ -251,8 +333,6 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
                   borderTopColor: theme.colors.border,
                   borderTopWidth: 0.5,
                   paddingTop: 0,
-                  paddingLeft: 4,
-                  paddingRight: 8,
                 }}
               >
                 <NativeItem
@@ -270,9 +350,12 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
                       <NativeText variant="subtitle">/20</NativeText>
                     </View>
                   }
+                  onPress={() => theoryAvgDisclaimer()}
                   separator
+                  chevron={false}
+                  style={{ paddingHorizontal: 4 }}
                 >
-                  <NativeText variant="subtitle">Moyenne max.</NativeText>
+                  <NativeText variant="subtitle">Moyenne théorique max.</NativeText>
                 </NativeItem>
                 <NativeItem
                   trailing={
@@ -289,8 +372,11 @@ const GradesAverageGraph: React.FC<GradesAverageGraphProps> = ({
                       <NativeText variant="subtitle">/20</NativeText>
                     </View>
                   }
+                  onPress={() => theoryAvgDisclaimer()}
+                  chevron={false}
+                  style={{ paddingHorizontal: 4 }}
                 >
-                  <NativeText variant="subtitle">Moyenne min.</NativeText>
+                  <NativeText variant="subtitle">Moyenne théorique min.</NativeText>
                 </NativeItem>
               </Reanimated.View>
             ) : (
