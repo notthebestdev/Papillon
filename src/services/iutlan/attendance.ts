@@ -18,7 +18,7 @@ export const saveIUTLanAttendance = async (account: LocalAccount): Promise<Atten
 
           let to = new Date(absence.dateFin);
           to.setHours(absence.fin);
-          if (!(absence.statut === "present")){
+          if (absence.statut !== "present") {
             allAbsences.push({
               id: absence.idAbs,
               fromTimestamp: from ? new Date(from).getTime() : undefined,
