@@ -70,6 +70,7 @@ const Subject: React.FC<SubjectProps> = ({
           data={sortings}
           selected={sortings[sorting]}
           onSelectionChange={(item) => {
+            // @ts-expect-error
             setSorting(sortings.indexOf(item));
           }}
           direction="right"
