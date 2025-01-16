@@ -2,7 +2,7 @@ import AnimatedNumber from "@/components/Global/AnimatedNumber";
 import { NativeText } from "@/components/Global/NativeComponents";
 import { getCourseSpeciality } from "@/utils/format/format_cours_name";
 import { useTheme } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import React, { memo, useEffect } from "react";
 import { View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import {type RouteParameters} from "@/router/helpers/types";
@@ -120,4 +120,4 @@ const SubjectTitle = ({ navigation, subject, subjectData, allGrades }: SubjectTi
   );
 };
 
-export default SubjectTitle;
+export default memo(SubjectTitle);

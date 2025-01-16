@@ -1,4 +1,4 @@
-import React, { type ReactNode, isValidElement, Children } from "react";
+import React, { type ReactNode, isValidElement, Children, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle, type TextStyle, Platform, TouchableNativeFeedback } from "react-native";
 import Reanimated, { type AnimatedProps, LinearTransition } from "react-native-reanimated";
 import { useTheme } from "@react-navigation/native";
@@ -390,73 +390,81 @@ interface NativeTextProps {
   exiting?: EntryOrExitLayoutType;
 }
 
-export const NativeText: React.FC<NativeTextProps> = (props) => {
-  const theme = useTheme();
-  const { colors } = theme;
+// Memoize the animation layout config
+const ANIM_CONFIG = animPapillon(LinearTransition);
 
-  let fontStyle: TextStyle = {};
+// Define static font styles outside component to avoid recreation
+const FONT_STYLES: Record<TextVariant, TextStyle> = {
+  title: {
+    fontFamily: "semibold",
+    fontSize: 17,
+    lineHeight: 20,
+  },
+  titleLarge: {
+    fontFamily: "semibold",
+    fontSize: 19,
+    lineHeight: 24,
+  },
+  titleLarge2: {
+    fontFamily: "bold",
+    fontSize: 24,
+    lineHeight: 28,
+  },
+  subtitle: {
+    fontFamily: "medium",
+    fontSize: 15,
+    lineHeight: 18,
+    opacity: 0.6,
+  },
+  overtitle: {
+    fontFamily: "semibold",
+    fontSize: 16,
+    lineHeight: 18,
+  },
+  default: {
+    fontFamily: "medium",
+    fontSize: 16,
+    lineHeight: 19,
+  },
+};
 
-  switch (props.variant) {
-    case "title":
-      fontStyle = {
-        fontFamily: "semibold",
-        fontSize: 17,
-        lineHeight: 20,
-      };
-      break;
-    case "titleLarge":
-      fontStyle = {
-        fontFamily: "semibold",
-        fontSize: 19,
-        lineHeight: 24,
-      };
-      break;
-    case "titleLarge2":
-      fontStyle = {
-        fontFamily: "bold",
-        fontSize: 24,
-        lineHeight: 28,
-      };
-      break;
-    case "subtitle":
-      fontStyle = {
-        fontFamily: "medium",
-        fontSize: 15,
-        lineHeight: 18,
-        opacity: 0.6,
-      };
-      break;
-    case "overtitle":
-      fontStyle = {
-        fontFamily: "semibold",
-        fontSize: 16,
-        lineHeight: 18,
-      };
-      break;
-    default:
-      fontStyle = {
-        fontFamily: "medium",
-        fontSize: 16,
-        lineHeight: 19,
-      };
-  }
+export const NativeText = React.memo(({
+  variant = "default",
+  color,
+  animated,
+  entering,
+  exiting,
+  style,
+  children,
+  ...props
+}: NativeTextProps) => {
+  const { colors } = useTheme();
+
+  // Memoize the combined styles
+  const combinedStyles = useMemo(() => [
+    {
+      fontFamily: "medium",
+      fontSize: 16,
+      color: color || colors.text,
+    },
+    FONT_STYLES[variant],
+    style,
+  ], [color, colors.text, variant, style]);
 
   return (
     <Reanimated.Text
       {...props}
-      style={[{
-        fontFamily: "medium",
-        fontSize: 16,
-        color: props.color || colors.text,
-      }, fontStyle, props.style]}
-      layout={props.animated && animPapillon(LinearTransition)}
-      entering={props.entering}
-      exiting={props.exiting}
+      style={combinedStyles}
+      layout={animated && ANIM_CONFIG}
+      entering={entering}
+      exiting={exiting}
     >
-      {props.children}
+      {children}
     </Reanimated.Text>
   );
-};
+});
+
+NativeText.displayName = "NativeText";
 
 const list_styles = StyleSheet.create({
   list: {

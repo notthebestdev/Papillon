@@ -8,6 +8,7 @@ import Reanimated, {
   FadeOutUp,
   LinearTransition
 } from "react-native-reanimated";
+import { memo } from "react";
 
 interface AnimatedNumberProps {
   /**
@@ -66,4 +67,4 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   );
 };
 
-export default AnimatedNumber;
+export default memo(AnimatedNumber);
