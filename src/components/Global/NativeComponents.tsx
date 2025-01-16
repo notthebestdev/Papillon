@@ -477,6 +477,8 @@ const list_header_styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: -10,
     paddingHorizontal: 6,
+    overflow: "visible",
+    zIndex: 99999999,
   },
   icon: {
     opacity: 0.4,

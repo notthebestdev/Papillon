@@ -8,9 +8,8 @@ import { animPapillon } from "@/utils/ui/animations";
 import React, { useEffect, useState } from "react";
 import { FlatList, View } from "react-native";
 import Reanimated, {
-  FadeInDown,
   FadeInUp,
-  FadeOutUp,
+  FadeOutDown,
 } from "react-native-reanimated";
 import SubjectTitle from "./SubjectTitle";
 import { type Grade, type GradesPerSubject } from "@/services/shared/Grade";
@@ -19,12 +18,14 @@ import type { RouteParameters } from "@/router/helpers/types";
 
 interface SubjectItemProps {
   subject: GradesPerSubject;
+  index?: number;
   allGrades: Grade[];
   navigation: NativeStackNavigationProp<RouteParameters, keyof RouteParameters>;
 }
 
 const SubjectItem: React.FC<SubjectItemProps> = ({
   subject,
+  index,
   allGrades,
   navigation,
 }) => {
@@ -46,8 +47,9 @@ const SubjectItem: React.FC<SubjectItemProps> = ({
   return (
     <NativeList
       animated
-      entering={animPapillon(FadeInUp)}
-      exiting={animPapillon(FadeOutUp)}
+      key={"averageItem" + subject.average.subjectName}
+      entering={animPapillon(FadeInUp).delay(((index ?? 0) < 6) ? (100 * (index ?? 0)) : 0)}
+      exiting={animPapillon(FadeOutDown).delay(((index ?? 0) < 6) ? (100 * (index ?? 0)) : 0)}
     >
       <SubjectTitle
         navigation={navigation}
@@ -89,8 +91,6 @@ const SubjectGradeItem: React.FC<SubjectGradeItemProps> = ({ subject, grade, ind
   return (
     <Reanimated.View
       key={grade.id + index}
-      entering={animPapillon(FadeInDown).delay(50 * index + 100)}
-      exiting={animPapillon(FadeOutUp).delay(50 * index)}
     >
       <NativeItem
         separator={index < subject.grades.length - 1}
