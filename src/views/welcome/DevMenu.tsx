@@ -101,17 +101,6 @@ const DevMenu: Screen<"DevMenu"> = ({ navigation }) => {
             </NativeItem>
 
             <NativeItem
-              onPress={() => {
-                // @ts-expect-error
-                navigation.navigate("NoteReaction");
-              }}
-            >
-              <NativeText>
-                NoteReaction
-              </NativeText>
-            </NativeItem>
-
-            <NativeItem
               onPress={() => navigation.navigate("ColorSelector")}
             >
               <NativeText>
