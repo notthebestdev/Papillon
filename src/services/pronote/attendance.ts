@@ -7,6 +7,7 @@ import { decodeAttachment } from "./attachment";
 import { ObservationType } from "../shared/Observation";
 import { decodePeriod } from "./period";
 import { info } from "@/utils/logger/logger";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 const getTab = (account: PronoteAccount): pronote.Tab => {
   if (!account.instance)
@@ -20,7 +21,10 @@ const getTab = (account: PronoteAccount): pronote.Tab => {
 };
 
 export const getAttendancePeriods = (account: PronoteAccount): { periods: Period[], default: string } => {
+  if (!account.instance)
+    throw new ErrorServiceUnauthenticated("pronote");
   const tab = getTab(account);
+
   info("PRONOTE->getAttendancePeriods(): OK", "pronote");
 
   return {
@@ -30,86 +34,95 @@ export const getAttendancePeriods = (account: PronoteAccount): { periods: Period
 };
 
 export async function getAttendance (account: PronoteAccount, periodName: string): Promise<Attendance> {
-  const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
-  const period = tab.periods.find(p => p.name === periodName);
-  if (!period)
-    throw new Error("La période sélectionnée n'a pas été trouvée.");
+  try {
+    const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
+    const period = tab.periods.find(p => p.name === periodName);
+    if (!period)
+      throw new Error("La période sélectionnée n'a pas été trouvée.");
 
-  const items = await pronote.notebook(account.instance!, period);
-  info(`PRONOTE->getAttendance(): OK pour ${periodName}`, "pronote");
+    const items = await pronote.notebook(account.instance!, period);
+    info(`PRONOTE->getAttendance(): OK pour ${periodName}`, "pronote");
 
-  const attendance: Attendance = {
-    observations: items.observations.map(observation => {
-      let sectionType: ObservationType;
+    const attendance: Attendance = {
+      observations: items.observations.map(observation => {
+        let sectionType: ObservationType;
 
-      switch (observation.kind) {
-        case pronote.NotebookObservationKind.LogBookIssue:
-          sectionType = ObservationType.LogBookIssue;
-          break;
-        case pronote.NotebookObservationKind.Encouragement:
-          sectionType = ObservationType.Encouragement;
-          break;
-        case pronote.NotebookObservationKind.Observation:
-          sectionType = ObservationType.Observation;
-          break;
-        case pronote.NotebookObservationKind.Other:
-          sectionType = ObservationType.Other;
-          break;
-      }
+        switch (observation.kind) {
+          case pronote.NotebookObservationKind.LogBookIssue:
+            sectionType = ObservationType.LogBookIssue;
+            break;
+          case pronote.NotebookObservationKind.Encouragement:
+            sectionType = ObservationType.Encouragement;
+            break;
+          case pronote.NotebookObservationKind.Observation:
+            sectionType = ObservationType.Observation;
+            break;
+          case pronote.NotebookObservationKind.Other:
+            sectionType = ObservationType.Other;
+            break;
+        }
 
-      return {
-        id: observation.id,
-        timestamp: observation.date.getTime(),
-        sectionName: observation.name,
-        sectionType,
-        subjectName: observation.subject?.name,
-        shouldParentsJustify: observation.shouldParentsJustify,
-        reasons: observation.reason
-      };
-    }),
+        return {
+          id: observation.id,
+          timestamp: observation.date.getTime(),
+          sectionName: observation.name,
+          sectionType,
+          subjectName: observation.subject?.name,
+          shouldParentsJustify: observation.shouldParentsJustify,
+          reasons: observation.reason
+        };
+      }),
 
-    punishments: items.punishments.map(punishment => ({
-      id: punishment.id,
+      punishments: items.punishments.map(punishment => ({
+        id: punishment.id,
 
-      schedulable: false, // TODO
-      schedule: [], // TODO
+        schedulable: false, // TODO
+        schedule: [], // TODO
 
-      timestamp: punishment.dateGiven.getTime(),
-      givenBy: punishment.giver,
-      exclusion: punishment.exclusion,
-      duringLesson: punishment.isDuringLesson,
-      homework: {
-        text: punishment.workToDo,
-        documents: punishment.workToDoDocuments.map(decodeAttachment)
-      },
-      reason: {
-        text: punishment.reasons,
-        circumstances: punishment.circumstances,
-        documents: punishment.circumstancesDocuments.map(decodeAttachment)
-      },
-      nature: punishment.title,
-      duration: punishment.durationMinutes
-    })),
+        timestamp: punishment.dateGiven.getTime(),
+        givenBy: punishment.giver,
+        exclusion: punishment.exclusion,
+        duringLesson: punishment.isDuringLesson,
+        homework: {
+          text: punishment.workToDo,
+          documents: punishment.workToDoDocuments.map(decodeAttachment)
+        },
+        reason: {
+          text: punishment.reasons,
+          circumstances: punishment.circumstances,
+          documents: punishment.circumstancesDocuments.map(decodeAttachment)
+        },
+        nature: punishment.title,
+        duration: punishment.durationMinutes
+      })),
 
-    absences: items.absences.map(absence => ({
-      id: absence.id,
-      fromTimestamp: absence.startDate.getTime(),
-      toTimestamp: absence.endDate.getTime(),
-      justified: absence.justified,
-      hours: absence.hoursMissed + "h" + absence.minutesMissed,
-      administrativelyFixed: absence.administrativelyFixed,
-      reasons: absence.reason
-    })),
+      absences: items.absences.map(absence => ({
+        id: absence.id,
+        fromTimestamp: absence.startDate.getTime(),
+        toTimestamp: absence.endDate.getTime(),
+        justified: absence.justified,
+        hours: absence.hoursMissed + "h" + absence.minutesMissed,
+        administrativelyFixed: absence.administrativelyFixed,
+        reasons: absence.reason
+      })),
 
-    delays: items.delays.map(delay => ({
-      id: delay.id,
-      timestamp: delay.date.getTime(),
-      duration: delay.minutes,
-      justified: delay.justified,
-      justification: delay.justification,
-      reasons: delay.reason ?? void 0,
-    }))
-  };
-
-  return attendance;
+      delays: items.delays.map(delay => ({
+        id: delay.id,
+        timestamp: delay.date.getTime(),
+        duration: delay.minutes,
+        justified: delay.justified,
+        justification: delay.justification,
+        reasons: delay.reason ?? void 0,
+      }))
+    };
+    return attendance;
+  }
+  catch (e) {
+    if (e instanceof Error && e.name === "SessionExpiredError") {
+      await reloadInstance(account.authentication);
+      return getAttendance(account, periodName);
+    } else {
+      throw e;
+    }
+  }
 }

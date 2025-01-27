@@ -3,6 +3,7 @@ import { Information } from "../shared/Information";
 import { ErrorServiceUnauthenticated } from "../shared/errors";
 import pronote from "pawnote";
 import { decodeAttachment } from "./attachment";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 const parseInformation = (i: pronote.NewsInformation): Information => ({
   id: i.id,
@@ -18,10 +19,19 @@ const parseInformation = (i: pronote.NewsInformation): Information => ({
 });
 
 export const getNews = async (account: PronoteAccount): Promise<Information[]> => {
-  if (!account.instance)
-    throw new ErrorServiceUnauthenticated("pronote");
+  try {
+    if (!account.instance)
+      throw new ErrorServiceUnauthenticated("pronote");
 
-  const news = await pronote.news(account.instance);
-  const informations = news.items.filter(n => n.is === "information") as pronote.NewsInformation[];
-  return informations.map(parseInformation);
+    const news = await pronote.news(account.instance);
+    const informations = news.items.filter(n => n.is === "information") as pronote.NewsInformation[];
+    return informations.map(parseInformation);
+  } catch (e) {
+    if (e instanceof Error && e.name === "SessionExpiredError") {
+      await reloadInstance(account.authentication);
+      return getNews(account);
+    } else {
+      throw e;
+    }
+  }
 };

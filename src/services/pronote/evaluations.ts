@@ -5,6 +5,7 @@ import {decodePeriod} from "@/services/pronote/period";
 import pronote from "pawnote";
 import {ErrorServiceUnauthenticated} from "@/services/shared/errors";
 import {Evaluation, SkillLevel} from "@/services/shared/Evaluation";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 const getTab = (account: PronoteAccount): pronote.Tab => {
   if (!account.instance)
@@ -28,33 +29,42 @@ export const getEvaluationsPeriods = (account: PronoteAccount): { periods: Perio
 };
 
 export const getEvaluations = async (account: PronoteAccount, periodName: string): Promise<Array<Evaluation>> => {
-  const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
-  const period = tab.periods.find(p => p.name === periodName);
-  if (!period)
-    throw new Error("La période sélectionnée n'a pas été trouvée.");
+  try {
+    const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
+    const period = tab.periods.find(p => p.name === periodName);
+    if (!period)
+      throw new Error("La période sélectionnée n'a pas été trouvée.");
 
-  const overview = await pronote.evaluations(account.instance!, period);
+    const overview = await pronote.evaluations(account.instance!, period);
 
-  const evaluations: Array<Evaluation> = overview.map(e => ({
-    id: buildLocalID(e),
-    name: e.name,
-    subjectId: e.subject.id,
-    subjectName: e.subject.name,
-    description: e.description,
-    timestamp: e.date.getTime(),
-    coefficient: e.coefficient,
-    levels: e.levels,
-    skills: e.skills.map(s => ({
-      coefficient: s.coefficient,
-      level: getLevel(s.abbreviation),
-      domainName: s.domainName,
-      itemName: s.itemName || "Compétence sans nom",
-      pillarPrefixes: s.pillarPrefixes,
-    })),
-    teacher: e.teacher
-  }));
+    const evaluations: Array<Evaluation> = overview.map(e => ({
+      id: buildLocalID(e),
+      name: e.name,
+      subjectId: e.subject.id,
+      subjectName: e.subject.name,
+      description: e.description,
+      timestamp: e.date.getTime(),
+      coefficient: e.coefficient,
+      levels: e.levels,
+      skills: e.skills.map(s => ({
+        coefficient: s.coefficient,
+        level: getLevel(s.abbreviation),
+        domainName: s.domainName,
+        itemName: s.itemName || "Compétence sans nom",
+        pillarPrefixes: s.pillarPrefixes,
+      })),
+      teacher: e.teacher
+    }));
 
-  return evaluations;
+    return evaluations;
+  } catch (e) {
+    if (e instanceof Error && e.name === "SessionExpiredError") {
+      await reloadInstance(account.authentication);
+      return getEvaluations(account, periodName);
+    } else {
+      throw e;
+    }
+  }
 };
 
 export const getLevel = (level: string): SkillLevel => {

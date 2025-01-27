@@ -4,6 +4,7 @@ import type { Information } from "./shared/Information";
 import { checkIfSkoSupported } from "./skolengo/default-personalization";
 import { error } from "@/utils/logger/logger";
 import { newsRead } from "pawnote";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 /**
  * Updates the state and cache for the news.
@@ -58,7 +59,16 @@ export async function setNewsRead <T extends Account> (account: T, message: Info
         error("[setNewsRead]: Instance is undefined.", "pronote");
         break;
       }
-      await newsRead(account.instance, message.ref, read);
+      try {
+        await newsRead(account.instance, message.ref, read);
+      } catch (e) {
+        if (e instanceof Error && e.name === "SessionExpiredError") {
+          await reloadInstance(account.authentication);
+          await newsRead(account.instance, message.ref, read);
+        } else {
+          throw e;
+        }
+      }
       break;
     }
     case AccountService.Local: {

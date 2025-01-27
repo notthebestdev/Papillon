@@ -3,6 +3,7 @@ import { TimetableClassStatus, WeekFrequency, type Timetable, type TimetableClas
 import { ErrorServiceUnauthenticated } from "../shared/errors";
 import pronote from "pawnote";
 import { info } from "@/utils/logger/logger";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 export const pronoteFirstDate = new Date("2024-09-01");
 
@@ -53,46 +54,55 @@ const decodeTimetableClass = (c: pronote.TimetableClassLesson | pronote.Timetabl
 };
 
 export const getTimetableForWeek = async (account: PronoteAccount, weekNumber: number): Promise<Timetable> => {
-  if (!account.instance)
-    throw new ErrorServiceUnauthenticated("pronote");
+  try {
+    if (!account.instance)
+      throw new ErrorServiceUnauthenticated("pronote");
 
-  if (weekNumber < 1 || weekNumber > 62) {
-    info("PRONOTE->getTimetableForWeek(): Le numéro de semaine est en dehors des bornes (1<>62), une liste vide est retournée.", "pronote");
-    return [];
+    if (weekNumber < 1 || weekNumber > 62) {
+      info("PRONOTE->getTimetableForWeek(): Le numéro de semaine est en dehors des bornes (1<>62), une liste vide est retournée.", "pronote");
+      return [];
+    }
+
+    const timetable = await pronote.timetableFromWeek(account.instance, weekNumber);
+    pronote.parseTimetable(account.instance, timetable, {
+      withSuperposedCanceledClasses: false,
+      withCanceledClasses: true,
+      withPlannedClasses: true
+    });
+
+    let timetable_formatted = timetable.classes.map(decodeTimetableClass);
+
+    await Promise.all(
+      timetable_formatted.map(async (c) => {
+        if (c.type === "lesson" && c.ressourceID) {
+          let ressource = (await pronote.resource(account.instance!, c.ressourceID)).contents;
+          c.ressource = ressource.map((r) => {
+            let category = category_match[r.category];
+            return {
+              title: r.title,
+              description: r.description,
+              category,
+              files: r.files.map((f) => {
+                return {
+                  name: f.name,
+                  url: f.url
+                };
+              })
+            };
+          });
+        }
+      })
+    );
+
+    return timetable_formatted;
+  } catch (e) {
+    if (e instanceof Error && e.name === "SessionExpiredError") {
+      await reloadInstance(account.authentication);
+      return getTimetableForWeek(account, weekNumber);
+    } else {
+      throw e;
+    }
   }
-
-  const timetable = await pronote.timetableFromWeek(account.instance, weekNumber);
-  pronote.parseTimetable(account.instance, timetable, {
-    withSuperposedCanceledClasses: false,
-    withCanceledClasses: true,
-    withPlannedClasses: true
-  });
-
-  let timetable_formatted = timetable.classes.map(decodeTimetableClass);
-
-  await Promise.all(
-    timetable_formatted.map(async (c) => {
-      if (c.type === "lesson" && c.ressourceID) {
-        let ressource = (await pronote.resource(account.instance!, c.ressourceID)).contents;
-        c.ressource = ressource.map((r) => {
-          let category = category_match[r.category];
-          return {
-            title: r.title,
-            description: r.description,
-            category,
-            files: r.files.map((f) => {
-              return {
-                name: f.name,
-                url: f.url
-              };
-            })
-          };
-        });
-      }
-    })
-  );
-
-  return timetable_formatted;
 };
 
 const category_match = {

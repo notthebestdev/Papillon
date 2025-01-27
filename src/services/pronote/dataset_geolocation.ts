@@ -40,10 +40,6 @@ const getInstancesFromDataset = async (longitude: number, latitude: number): Pro
           instance.long
         );
 
-        console.log("User location:", { latitude, longitude });
-        console.log("Instance location:", { latitude: instance.lat, longitude: instance.long });
-        console.log("Calculated distance:", distance);
-
         return {
           name: instance.name.toUpperCase(),
           url: instance.url,

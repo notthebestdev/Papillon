@@ -10,6 +10,7 @@ import { decodeAttachment } from "./attachment";
 import { decodePeriod } from "./period";
 import pronote from "pawnote";
 import { info } from "@/utils/logger/logger";
+import {reloadInstance} from "@/services/pronote/reload-instance";
 
 const getTab = (account: PronoteAccount): pronote.Tab => {
   if (!account.instance) throw new ErrorServiceUnauthenticated("pronote");
@@ -70,50 +71,59 @@ export const getGradesAndAverages = async (
   grades: Grade[];
   averages: AverageOverview;
 }> => {
-  const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
-  const period = tab.periods.find((p) => p.name === periodName);
-  if (!period) throw new Error("La période sélectionnée n'a pas été trouvée.");
+  try {
+    const tab = getTab(account); // Vérifie aussi la validité de `account.instance`.
+    const period = tab.periods.find((p) => p.name === periodName);
+    if (!period) throw new Error("La période sélectionnée n'a pas été trouvée.");
 
-  const overview = await pronote.gradesOverview(account.instance!, period);
+    const overview = await pronote.gradesOverview(account.instance!, period);
 
-  const averages: AverageOverview = {
-    classOverall: decodeGradeValue(overview.classAverage),
-    overall: decodeGradeValue(overview.overallAverage),
-    subjects: overview.subjectsAverages.map((s) => ({
-      classAverage: decodeGradeValue(s.class_average),
-      color: s.backgroundColor,
-      max: decodeGradeValue(s.max),
-      subjectName: s.subject.name,
-      id: s.subject.id ? s.subject.id.toString() : undefined,
-      min: decodeGradeValue(s.min),
-      average: decodeGradeValue(s.student),
-      outOf: decodeGradeValue(s.outOf),
-    })),
-  };
+    const averages: AverageOverview = {
+      classOverall: decodeGradeValue(overview.classAverage),
+      overall: decodeGradeValue(overview.overallAverage),
+      subjects: overview.subjectsAverages.map((s) => ({
+        classAverage: decodeGradeValue(s.class_average),
+        color: s.backgroundColor,
+        max: decodeGradeValue(s.max),
+        subjectName: s.subject.name,
+        id: s.subject.id ? s.subject.id.toString() : undefined,
+        min: decodeGradeValue(s.min),
+        average: decodeGradeValue(s.student),
+        outOf: decodeGradeValue(s.outOf),
+      })),
+    };
 
-  const grades: Grade[] = overview.grades.map((g) => ({
-    id: buildLocalID(g),
-    subjectName: g.subject.name,
-    subjectId: g.subject.id ? g.subject.id.toString() : undefined,
-    description: g.comment,
-    timestamp: g.date.getTime(),
+    const grades: Grade[] = overview.grades.map((g) => ({
+      id: buildLocalID(g),
+      subjectName: g.subject.name,
+      subjectId: g.subject.id ? g.subject.id.toString() : undefined,
+      description: g.comment,
+      timestamp: g.date.getTime(),
 
-    subjectFile: g.subjectFile && decodeAttachment(g.subjectFile),
-    correctionFile: g.correctionFile && decodeAttachment(g.correctionFile),
+      subjectFile: g.subjectFile && decodeAttachment(g.subjectFile),
+      correctionFile: g.correctionFile && decodeAttachment(g.correctionFile),
 
-    isBonus: g.isBonus,
-    isOptional: g.isOptional,
+      isBonus: g.isBonus,
+      isOptional: g.isOptional,
 
-    outOf: decodeGradeValue(g.outOf),
-    coefficient: g.coefficient,
+      outOf: decodeGradeValue(g.outOf),
+      coefficient: g.coefficient,
 
-    student: decodeGradeValue(g.value),
-    average: decodeGradeValue(g.average),
-    max: decodeGradeValue(g.max),
-    min: decodeGradeValue(g.min),
-  }));
+      student: decodeGradeValue(g.value),
+      average: decodeGradeValue(g.average),
+      max: decodeGradeValue(g.max),
+      min: decodeGradeValue(g.min),
+    }));
 
-  return { averages, grades };
+    return { averages, grades };
+  } catch (e) {
+    if (e instanceof Error && e.name === "SessionExpiredError") {
+      await reloadInstance(account.authentication);
+      return getGradesAndAverages(account, periodName);
+    } else {
+      throw e;
+    }
+  }
 };
 
 export const buildLocalID = (g: pronote.Grade): string =>
