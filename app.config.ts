@@ -92,6 +92,9 @@ export default (): ExpoConfig => ({
         ],
       },
     ],
+    [
+      "expo-asset"
+    ],
     "expo-barcode-scanner",
     [
       "expo-location",
