@@ -12,7 +12,7 @@ import {
   RefreshControl,
   StyleSheet,
   TextInput,
-  ListRenderItem
+  ListRenderItem, Button
 } from "react-native";
 import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
 
@@ -40,6 +40,9 @@ import {NativeScrollEvent, ScrollViewProps} from "react-native/Libraries/Compone
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {hasFeatureAccountSetup} from "@/utils/multiservice";
 import {MultiServiceFeature} from "@/stores/multiService/types";
+import {translateToWeekNumber} from "pawnote";
+import {pronoteFirstDate} from "@/services/pronote/timetable";
+import categorizeHomeworks from "@/utils/magic/categorizeHomeworks";
 
 type HomeworksPageProps = {
   index: number;
@@ -254,6 +257,23 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
           />
         }
       >
+        <Button title={"Export all homeworks"} onPress={async () => {
+          console.log("Export all homeworks");
+          let homeworks = [];
+          let finalHomeworks = [];
+          const { getHomeworkForWeek } = await import("../../../services/pronote/homework");
+          const weekNumber = 5;
+          for (let i = 20; i < 50; i++) {
+            homeworks = await getHomeworkForWeek(account, i);
+            homeworks.forEach((homework) => {
+              finalHomeworks.push({
+                description: homework.content,
+                type: categorizeHomeworks(homework.content),
+              });
+            });
+          }
+          console.log(JSON.stringify(finalHomeworks));
+        }} />
         {groupedHomework && Object.keys(groupedHomework).map((day, index) => (
           <Reanimated.View
             key={day}
