@@ -48,7 +48,7 @@ import { hasFeatureAccountSetup } from "@/utils/multiservice";
 import { MultiServiceFeature } from "@/stores/multiService/types";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateModal from "@/components/Global/DateModal";
 
 const MemoizedHomeworkItem = React.memo(HomeworkItem);
 const MemoizedNativeList = React.memo(NativeList);
@@ -472,12 +472,9 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         </View>
 
         {showDatePickerWeek && (
-          <DateTimePicker
-            value={weekNumberToMiddleDate(selectedWeek)}
-            mode="date"
-            display="default"
-            onChange={(_event, selectedDate) => {
-              setShowDatePickerWeek(false);
+          <DateModal
+            currentDate={weekNumberToMiddleDate(selectedWeek)}
+            onDateSelect={(selectedDate) => {
               if (selectedDate) {
                 selectedDate.setUTCHours(1, 0, 0, 0);
 
@@ -493,6 +490,9 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                 }
               }
             }}
+            showDatePicker={showDatePickerWeek}
+            setShowDatePicker={setShowDatePickerWeek}
+            isHomework
           />
         )}
       </PapillonModernHeader>

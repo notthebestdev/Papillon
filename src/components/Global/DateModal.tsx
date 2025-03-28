@@ -12,6 +12,7 @@ import {
   PapillonContextExit,
 } from "@/utils/ui/animations";
 import { Calendar, LocaleConfig } from "react-native-calendars";
+import { dateToEpochWeekNumber, weekNumberToDateRange } from "@/utils/epochWeekNumber";
 
 LocaleConfig.locales["fr"] = {
   monthNames: [
@@ -61,12 +62,8 @@ interface DateModalProps {
   showDatePicker: boolean;
   setShowDatePicker: (show: boolean) => unknown;
   onDateSelect: (date: Date | undefined) => unknown;
-  currentPageIndex?: number;
-  defaultDate?: Date;
   currentDate: Date;
-  // NOTE: PagerRef is hard to type, may need help on this ?
-  PagerRef?: React.RefObject<any>;
-  getDateFromIndex?: (index: number) => Date;
+  isHomework: boolean;
 }
 
 const DateModal: React.FC<DateModalProps> = ({
@@ -74,9 +71,45 @@ const DateModal: React.FC<DateModalProps> = ({
   setShowDatePicker,
   onDateSelect,
   currentDate,
+  isHomework,
 }) => {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
+
+  const weekRange = isHomework
+    ? weekNumberToDateRange(dateToEpochWeekNumber(currentDate))
+    : null;
+
+  const markedDates = React.useMemo(() => {
+    const marks: Record<string, any> = {};
+
+    if (isHomework && weekRange) {
+      const { start: startOfWeek, end: endOfWeek } = weekRange;
+      let current = new Date(startOfWeek);
+
+      while (current <= endOfWeek) {
+        const dateString = current.toISOString().split("T")[0];
+        marks[dateString] = {
+          selected: true,
+          marked: true,
+          selectedColor: colors.primary,
+          selectedTextColor: "#fff",
+        };
+        current.setDate(current.getDate() + 1); // Passer au jour suivant
+      }
+    } else {
+      const dateString = currentDate.toISOString().split("T")[0];
+      marks[dateString] = {
+        selected: true,
+        disableTouchEvent: true,
+        selectedDotColor: "orange",
+        selectedColor: colors.primary,
+        selectedTextColor: "#fff",
+      };
+    }
+
+    return marks;
+  }, [isHomework, weekRange, currentDate, colors]);
 
   return (
     <Modal transparent={true} visible={showDatePicker}>
@@ -164,16 +197,11 @@ const DateModal: React.FC<DateModalProps> = ({
           <Calendar
             current={currentDate.toISOString().split("T")[0]}
             onDayPress={(day: { dateString: string | number | Date }) => {
+              setShowDatePicker(false);
               const selectedDate = new Date(day.dateString);
               onDateSelect(selectedDate);
             }}
-            markedDates={{
-              [currentDate.toISOString().split("T")[0]]: {
-                selected: true,
-                disableTouchEvent: true,
-                selectedDotColor: "orange",
-              },
-            }}
+            markedDates={markedDates}
             theme={{
               backgroundColor: colors.card,
               calendarBackground: colors.card,

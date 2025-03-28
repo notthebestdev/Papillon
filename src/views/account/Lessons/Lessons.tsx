@@ -477,6 +477,7 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
         onDateSelect={(date) => {
           onDateSelect(date);
         }}
+        isHomework={false}
       />
     </View>
   );

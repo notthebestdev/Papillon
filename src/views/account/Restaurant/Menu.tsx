@@ -650,6 +650,7 @@ const Menu: Screen<"Menu"> = ({ route, navigation }) => {
               setShowDatePicker={setShowDatePicker}
               currentDate={pickerDate}
               onDateSelect={onDatePickerSelect}
+              isHomework={false}
             />
           </>
         )}
