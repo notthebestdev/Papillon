@@ -20,13 +20,12 @@ import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
 import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
-import { CheckSquare, Plus } from "lucide-react-native";
+import { CheckSquare, Plus, WandSparkles } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
 import Reanimated, {
   FadeIn,
-  FadeInLeft,
   FadeInUp,
   FadeOutDown,
   FadeOutLeft,
@@ -407,39 +406,67 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
           }}
         />
 
-        <Reanimated.View
-          layout={animPapillon(LinearTransition)}
-          entering={animPapillon(FadeInLeft).delay(100)}
-          exiting={animPapillon(FadeOutLeft)}
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: hideDone ? theme.colors.primary : theme.colors.background + "ff",
-            borderColor: theme.colors.border + "dd",
-            borderWidth: 1,
-            borderRadius: 800,
-            height: 40,
-            width: 40,
-            gap: 4,
-            shadowColor: "#00000022",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.6,
-            shadowRadius: 4,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => {
-              setHideDone(!hideDone);
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: hideDone ? theme.colors.primary : theme.colors.background + "ff",
+              borderColor: theme.colors.border + "dd",
+              borderWidth: 1,
+              borderRadius: 800,
+              height: 40,
+              width: 40,
+              gap: 4,
+              shadowColor: "#00000022",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.6,
+              shadowRadius: 4,
             }}
           >
-            <CheckSquare
-              size={20}
-              color={hideDone ? "#fff" : theme.colors.text}
-              strokeWidth={2.5}
-              opacity={hideDone ? 1 : 0.7}
-            />
-          </TouchableOpacity>
-        </Reanimated.View>
+            <TouchableOpacity
+              onPress={() => {
+                setHideDone(!hideDone);
+              }}
+            >
+              <CheckSquare
+                size={20}
+                color={hideDone ? "#fff" : theme.colors.text}
+                strokeWidth={2.5}
+                opacity={hideDone ? 1 : 0.7}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: theme.colors.primary,
+              borderColor: theme.colors.border + "dd",
+              borderWidth: 1,
+              borderRadius: 800,
+              height: 40,
+              width: 40,
+              gap: 4,
+              shadowColor: "#00000022",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.6,
+              shadowRadius: 4,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SettingStack", { screen: "SettingsMagic" })}
+            >
+              <WandSparkles
+                size={20}
+                color={theme.colors.text}
+                strokeWidth={2.5}
+                opacity={1}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </PapillonModernHeader>
 
       <AddHomeworkButton
