@@ -11,7 +11,6 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  TextInput,
   ListRenderItem,
   Pressable,
   TouchableOpacity
@@ -21,15 +20,14 @@ import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
 import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
-import { Book, CheckSquare, ChevronLeft, ChevronRight, CircleDashed, Plus, Search, X } from "lucide-react-native";
+import { CheckSquare, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
-import Reanimated, { Easing, FadeIn, FadeInLeft, FadeInUp, FadeOut, FadeOutDown, FadeOutLeft, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
+import Reanimated, { FadeIn, FadeInLeft, FadeInUp, FadeOutDown, FadeOutLeft, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
 import { animPapillon } from "@/utils/ui/animations";
 import PapillonSpinner from "@/components/Global/PapillonSpinner";
 import AnimatedNumber from "@/components/Global/AnimatedNumber";
-import * as Haptics from "expo-haptics";
 import MissingItem from "@/components/Global/MissingItem";
 import { PapillonModernHeader } from "@/components/Global/PapillonModernHeader";
 import {Homework} from "@/services/shared/Homework";
@@ -40,7 +38,6 @@ import {NativeScrollEvent, ScrollViewProps} from "react-native/Libraries/Compone
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {hasFeatureAccountSetup} from "@/utils/multiservice";
 import {MultiServiceFeature} from "@/stores/multiService/types";
-import useSoundHapticsWrapper from "@/utils/native/playSoundHaptics";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
 
@@ -59,7 +56,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   const { width } = Dimensions.get("window");
   const finalWidth = width;
   const insets = useSafeAreaInsets();
-  const { playHaptics } = useSoundHapticsWrapper();
   const { isOnline } = useOnlineStatus();
 
   const outsideNav = route.params?.outsideNav;
@@ -146,8 +142,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     }, 0);
   }, [selectedWeek]);
 
-  const [searchTerms, setSearchTerms] = useState("");
-
   const renderWeek: ListRenderItem<number> = useCallback(({ item }) => {
     const homeworksInWeek = [...(homeworks[item] ?? [])];
 
@@ -164,16 +158,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         acc[day] = [curr];
       } else {
         acc[day].push(curr);
-      }
-
-      // filter homeworks by search terms
-      if (searchTerms.length > 0) {
-        acc[day] = acc[day].filter(homework => {
-          const content = homework.content.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          const subject = homework.subject.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          return content.includes(searchTerms.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")) ||
-                 subject.includes(searchTerms.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-        });
       }
 
       // if hideDone is enabled, filter out the done homeworks
@@ -292,15 +276,8 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
               width: "100%",
             }}
             layout={animPapillon(LinearTransition)}
-            key={searchTerms + hideDone}
           >
-            {searchTerms.length > 0 ? (
-              <MissingItem
-                emoji="🔍"
-                title="Aucun résultat"
-                description="Aucun devoir ne correspond à ta recherche."
-              />
-            ) : hideDone ? (
+            {hideDone ? (
               <MissingItem
                 emoji="🌴"
                 title="Il ne reste rien à faire"
@@ -326,7 +303,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     );
   }, [
     homeworks,
-    searchTerms,
     hideDone,
     updateHomeworks,
     navigation,
@@ -388,41 +364,9 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     }
   }, [data, finalWidth]);
 
-  const [showPickerButtons, setShowPickerButtons] = useState(false);
-  const [searchHasFocus, setSearchHasFocus] = useState(false);
-
-  const SearchRef: React.MutableRefObject<TextInput> = useRef(null) as any as React.MutableRefObject<TextInput>;
-
   return (
     <View>
       <PapillonModernHeader outsideNav={outsideNav}>
-        {showPickerButtons && !searchHasFocus &&
-          <Reanimated.View
-            layout={animPapillon(LinearTransition)}
-            entering={animPapillon(ZoomIn)}
-            exiting={animPapillon(ZoomOut)}
-          >
-            <PressableScale
-              onPress={() => goToWeek(selectedWeek - 1)}
-              activeScale={0.8}
-            >
-              <BlurView
-                style={[styles.weekButton, {
-                  backgroundColor: theme.colors.primary + 16,
-                }]}
-                tint={theme.dark ? "dark" : "light"}
-              >
-                <ChevronLeft
-                  size={24}
-                  color={theme.colors.primary}
-                  strokeWidth={2.5}
-                />
-              </BlurView>
-            </PressableScale>
-          </Reanimated.View>
-        }
-
-        {!searchHasFocus &&
         <Reanimated.View
           layout={animPapillon(LinearTransition)}
           entering={animPapillon(FadeIn).delay(100)}
@@ -430,21 +374,11 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         >
           <PressableScale
             style={[styles.weekPickerContainer]}
-            onPress={() => setShowPickerButtons(!showPickerButtons)}
-            onLongPress={() => {
-              setHideDone(!hideDone);
-              playHaptics("notification", {
-                notification: Haptics.NotificationFeedbackType.Success,
-              });
-            }}
-            delayLongPress={200}
           >
             <Reanimated.View
               layout={animPapillon(LinearTransition)}
               style={[{
-                backgroundColor:
-                showPickerButtons ? theme.colors.primary + 16 :
-                  theme.colors.text + 16,
+                backgroundColor: theme.colors.text + 16,
                 overflow: "hidden",
                 borderRadius: 80,
               }]}
@@ -455,42 +389,9 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                 }]}
                 tint={theme.dark ? "dark" : "light"}
               >
-                {showPickerButtons && !loading &&
-                  <Reanimated.View
-                    entering={animPapillon(FadeIn)}
-                    exiting={animPapillon(FadeOut)}
-                    style={{
-                      marginRight: 2,
-                    }}
-                  >
-                    <Book
-                      color={showPickerButtons ? theme.colors.primary : theme.colors.text}
-                      size={18}
-                      strokeWidth={2.6}
-                    />
-                  </Reanimated.View>
-                }
-
-                {!showPickerButtons && hideDone &&
-                    <Reanimated.View
-                      entering={animPapillon(ZoomIn)}
-                      exiting={animPapillon(FadeOut)}
-                      style={{
-                        marginRight: 2,
-                      }}
-                    >
-                      <CircleDashed
-                        color={showPickerButtons ? theme.colors.primary : theme.colors.text}
-                        size={18}
-                        strokeWidth={3}
-                        opacity={0.7}
-                      />
-                    </Reanimated.View>
-                }
-
                 <Reanimated.Text style={[styles.weekPickerText, styles.weekPickerTextIntl,
                   {
-                    color: showPickerButtons ? theme.colors.primary : theme.colors.text,
+                    color: theme.colors.text,
                   }
                 ]}
                 layout={animPapillon(LinearTransition)}
@@ -505,7 +406,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                     value={((selectedWeek - firstDateEpoch % 52) % 52 + 1).toString()}
                     style={[styles.weekPickerText, styles.weekPickerTextNbr,
                       {
-                        color: showPickerButtons ? theme.colors.primary : theme.colors.text,
+                        color: theme.colors.text,
                       }
                     ]}
                   />
@@ -514,7 +415,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                 {loading &&
                   <PapillonSpinner
                     size={18}
-                    color={showPickerButtons ? theme.colors.primary : theme.colors.text}
+                    color={theme.colors.text}
                     strokeWidth={2.8}
                     entering={animPapillon(ZoomIn)}
                     exiting={animPapillon(ZoomOut)}
@@ -527,44 +428,14 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
             </Reanimated.View>
           </PressableScale>
         </Reanimated.View>
-        }
 
-        {showPickerButtons && !searchHasFocus &&
-          <Reanimated.View
-            layout={animPapillon(LinearTransition)}
-            entering={animPapillon(ZoomIn).delay(100)}
-            exiting={animPapillon(FadeOutLeft)}
-          >
-            <PressableScale
-              onPress={() => goToWeek(selectedWeek + 1)}
-              activeScale={0.8}
-            >
-              <BlurView
-                style={[styles.weekButton, {
-                  backgroundColor: theme.colors.primary + 16,
-                }]}
-                tint={theme.dark ? "dark" : "light"}
-              >
-                <ChevronRight
-                  size={24}
-                  color={theme.colors.primary}
-                  strokeWidth={2.5}
-                />
-              </BlurView>
-            </PressableScale>
-          </Reanimated.View>
-        }
+        <Reanimated.View
+          layout={animPapillon(LinearTransition)}
+          style={{
+            flex: 1
+          }}
+        />
 
-        {showPickerButtons && !searchHasFocus &&
-          <Reanimated.View
-            layout={animPapillon(LinearTransition)}
-            style={{
-              flex: 1
-            }}
-          />
-        }
-
-        {showPickerButtons && !searchHasFocus && width > 330 &&
         <Reanimated.View
           layout={animPapillon(LinearTransition)}
           entering={animPapillon(FadeInLeft).delay(100)}
@@ -577,9 +448,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
             borderWidth: 1,
             borderRadius: 800,
             height: 40,
-            width: showPickerButtons ? 40 : null,
-            minWidth: showPickerButtons ? 40 : null,
-            maxWidth: showPickerButtons ? 40 : null,
+            width: 40,
             gap: 4,
             shadowColor: "#00000022",
             shadowOffset: { width: 0, height: 2 },
@@ -599,107 +468,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
               opacity={hideDone ? 1 : 0.7}
             />
           </TouchableOpacity>
-        </Reanimated.View>
-        }
-
-        <Reanimated.View
-          layout={
-            LinearTransition.duration(250).easing(Easing.bezier(0.5, 0, 0, 1).factory())
-          }
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: 1,
-            backgroundColor: theme.colors.background + "ff",
-            borderColor: theme.colors.border + "dd",
-            borderWidth: 1,
-            borderRadius: 800,
-            paddingHorizontal: 14,
-            height: 40,
-            width: showPickerButtons ? 40 : null,
-            minWidth: showPickerButtons ? 40 : null,
-            maxWidth: showPickerButtons ? 40 : null,
-            gap: 4,
-            shadowColor: "#00000022",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.6,
-            shadowRadius: 4,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => {
-              setShowPickerButtons(false);
-
-              setTimeout(() => {
-                // #TODO : change timeout method or duration
-                SearchRef.current?.focus();
-              }, 20);
-            }}
-          >
-            <Search
-              size={20}
-              color={theme.colors.text}
-              strokeWidth={2.5}
-              opacity={0.7}
-            />
-          </TouchableOpacity>
-
-          {!showPickerButtons &&
-          <Reanimated.View
-            layout={animPapillon(LinearTransition)}
-            style={{
-              flex: 1,
-              height: "100%",
-              overflow: "hidden",
-              borderRadius: 80,
-            }}
-            entering={FadeIn.duration(250).delay(20)}
-            exiting={FadeOut.duration(100)}
-          >
-            <TextInput
-              placeholder={
-                (hideDone && !searchHasFocus) ? "Non terminé" :
-                  "Rechercher"
-              }
-              value={searchTerms}
-              onChangeText={setSearchTerms}
-              placeholderTextColor={theme.colors.text + "80"}
-              style={{
-                color: theme.colors.text,
-                padding: 8,
-                borderRadius: 80,
-                fontFamily: "medium",
-                fontSize: 16.5,
-                flex: 1,
-              }}
-              onFocus={() => setSearchHasFocus(true)}
-              onBlur={() => setSearchHasFocus(false)}
-              ref={SearchRef}
-            />
-          </Reanimated.View>
-          }
-
-          {searchTerms.length > 0 && searchHasFocus &&
-          <TouchableOpacity
-            onPress={() => {
-              setSearchTerms("");
-            }}
-          >
-            <Reanimated.View
-              layout={animPapillon(LinearTransition)}
-              entering={FadeIn.duration(100)}
-              exiting={FadeOut.duration(100)}
-            >
-              <X
-                size={20}
-                color={theme.colors.text}
-                strokeWidth={2.5}
-                opacity={0.7}
-              />
-            </Reanimated.View>
-          </TouchableOpacity>
-          }
         </Reanimated.View>
       </PapillonModernHeader>
 
