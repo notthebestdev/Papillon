@@ -24,20 +24,29 @@ import { CheckSquare, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
-import Reanimated, { FadeIn, FadeInLeft, FadeInUp, FadeOutDown, FadeOutLeft, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
+import Reanimated, {
+  FadeIn,
+  FadeInLeft,
+  FadeInUp,
+  FadeOutDown,
+  FadeOutLeft,
+  LinearTransition,
+  ZoomIn,
+  ZoomOut,
+} from "react-native-reanimated";
 import { animPapillon } from "@/utils/ui/animations";
 import PapillonSpinner from "@/components/Global/PapillonSpinner";
 import AnimatedNumber from "@/components/Global/AnimatedNumber";
 import MissingItem from "@/components/Global/MissingItem";
 import { PapillonModernHeader } from "@/components/Global/PapillonModernHeader";
-import {Homework} from "@/services/shared/Homework";
-import { AccountService} from "@/stores/account/types";
-import {Screen} from "@/router/helpers/types";
-import {NativeSyntheticEvent} from "react-native/Libraries/Types/CoreEventTypes";
-import {NativeScrollEvent, ScrollViewProps} from "react-native/Libraries/Components/ScrollView/ScrollView";
+import { Homework } from "@/services/shared/Homework";
+import { AccountService } from "@/stores/account/types";
+import { Screen } from "@/router/helpers/types";
+import { NativeSyntheticEvent } from "react-native/Libraries/Types/CoreEventTypes";
+import { NativeScrollEvent, ScrollViewProps } from "react-native/Libraries/Components/ScrollView/ScrollView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {hasFeatureAccountSetup} from "@/utils/multiservice";
-import {MultiServiceFeature} from "@/stores/multiService/types";
+import { hasFeatureAccountSetup } from "@/utils/multiservice";
+import { MultiServiceFeature } from "@/stores/multiService/types";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
 
@@ -54,7 +63,6 @@ const formatDate = (date: string | number | Date): string => {
 const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   const flatListRef: React.MutableRefObject<FlatList> = useRef(null) as any as React.MutableRefObject<FlatList>;
   const { width } = Dimensions.get("window");
-  const finalWidth = width;
   const insets = useSafeAreaInsets();
   const { isOnline } = useOnlineStatus();
 
@@ -78,14 +86,12 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   const [data, setData] = useState(Array.from({ length: 100 }, (_, i) => currentWeek - 50 + i));
 
   const [selectedWeek, setSelectedWeek] = useState(currentWeek);
-  const [direction, setDirection] = useState<"left" | "right">("right");
-  const [oldSelectedWeek, setOldSelectedWeek] = useState(selectedWeek);
 
   const [hideDone, setHideDone] = useState(false);
 
   const getItemLayout = useCallback((_: any, index: number) => ({
-    length: finalWidth,
-    offset: finalWidth * index,
+    length: width,
+    offset: width * index,
     index,
   }), [width]);
 
@@ -108,7 +114,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   const [loadedWeeks, setLoadedWeeks] = useState<number[]>([]);
 
   const updateHomeworks = useCallback(async (force = false, showRefreshing = true, showLoading = true) => {
-    if(!account) return;
+    if (!account) return;
 
     if (!force && loadedWeeks.includes(selectedWeek)) {
       return;
@@ -127,20 +133,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         setLoadedWeeks(prev => [...prev, selectedWeek]);
       });
   }, [account, selectedWeek, loadedWeeks]);
-
-  // on page change, load the homeworks
-  useEffect(() => {
-    if (selectedWeek > oldSelectedWeek) {
-      setDirection("right");
-    } else if (selectedWeek < oldSelectedWeek) {
-      setDirection("left");
-    }
-
-    setTimeout(() => {
-      setOldSelectedWeek(selectedWeek);
-      updateHomeworks(false, false);
-    }, 0);
-  }, [selectedWeek]);
 
   const renderWeek: ListRenderItem<number> = useCallback(({ item }) => {
     const homeworksInWeek = [...(homeworks[item] ?? [])];
@@ -197,14 +189,13 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
 
             setTimeout(() => {
               AsyncStorage.getItem("review_given").then((value) => {
-                if(!value) {
+                if (!value) {
                   askForReview();
                   AsyncStorage.setItem("review_given", "true");
                 }
               });
             }, 1000);
-          }
-          else {
+          } else {
             AsyncStorage.setItem("review_checkedHomeworkCount", (parseInt(value) + 1).toString());
           }
         } else {
@@ -327,42 +318,19 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   };
 
   const onScroll: ScrollViewProps["onScroll"] = useCallback(({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (nativeEvent.contentOffset.x < finalWidth) {
+    if (nativeEvent.contentOffset.x < width) {
       onStartReached();
     }
 
     // Update selected week based on scroll position
-    const index = Math.round(nativeEvent.contentOffset.x / finalWidth);
+    const index = Math.round(nativeEvent.contentOffset.x / width);
     setSelectedWeek(data[index]);
-  }, [finalWidth, data]);
+  }, [width, data]);
 
   const onMomentumScrollEnd: ScrollViewProps["onMomentumScrollEnd"] = useCallback(({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(nativeEvent.contentOffset.x / finalWidth);
+    const index = Math.round(nativeEvent.contentOffset.x / width);
     setSelectedWeek(data[index]);
-  }, [finalWidth, data]);
-
-  const goToWeek = useCallback((weekNumber: number) => {
-    const index = data.findIndex(week => week === weekNumber);
-    if (index !== -1) {
-      // @ts-expect-error
-      const currentIndex = Math.round(flatListRef.current?.contentOffset?.x / finalWidth) || 0;
-      const distance = Math.abs(index - currentIndex);
-      const animated = distance <= 10; // Animate if the distance is 10 weeks or less
-
-      flatListRef.current?.scrollToIndex({ index, animated });
-      setSelectedWeek(weekNumber);
-    } else {
-      // If the week is not in the current data, update the data and scroll
-      const newData = Array.from({ length: 100 }, (_, i) => weekNumber - 50 + i);
-      setData(newData);
-
-      // Use a timeout to ensure the FlatList has updated before scrolling
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({ index: 50, animated: false });
-        setSelectedWeek(weekNumber);
-      }, 0);
-    }
-  }, [data, finalWidth]);
+  }, [width, data]);
 
   return (
     <View>
@@ -389,25 +357,28 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                 }]}
                 tint={theme.dark ? "dark" : "light"}
               >
-                <Reanimated.Text style={[styles.weekPickerText, styles.weekPickerTextIntl,
-                  {
-                    color: theme.colors.text,
-                  }
-                ]}
-                layout={animPapillon(LinearTransition)}
+                <Reanimated.Text
+                  style={[
+                    styles.weekPickerText,
+                    styles.weekPickerTextIntl,
+                    {
+                      color: theme.colors.text,
+                    },
+                  ]}
+                  layout={animPapillon(LinearTransition)}
                 >
                   {width > 370 ? "Semaine" : "sem."}
                 </Reanimated.Text>
 
-                <Reanimated.View
-                  layout={animPapillon(LinearTransition)}
-                >
+                <Reanimated.View layout={animPapillon(LinearTransition)}>
                   <AnimatedNumber
                     value={((selectedWeek - firstDateEpoch % 52) % 52 + 1).toString()}
-                    style={[styles.weekPickerText, styles.weekPickerTextNbr,
+                    style={[
+                      styles.weekPickerText,
+                      styles.weekPickerTextNbr,
                       {
                         color: theme.colors.text,
-                      }
+                      },
                     ]}
                   />
                 </Reanimated.View>
