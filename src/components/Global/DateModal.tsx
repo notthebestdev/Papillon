@@ -44,15 +44,15 @@ LocaleConfig.locales["fr"] = {
     "Déc.",
   ],
   dayNames: [
-    "Dimanche",
     "Lundi",
     "Mardi",
     "Mercredi",
     "Jeudi",
     "Vendredi",
     "Samedi",
+    "Dimanche",
   ],
-  dayNamesShort: ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."],
+  dayNamesShort: ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."],
   today: "Aujourd'hui",
 };
 
@@ -86,8 +86,9 @@ const DateModal: React.FC<DateModalProps> = ({
     if (isHomework && weekRange) {
       const { start: startOfWeek, end: endOfWeek } = weekRange;
       let current = new Date(startOfWeek);
+      current.setUTCDate(current.getUTCDate() - 1);
 
-      while (current <= endOfWeek) {
+      while (current < endOfWeek) {
         const dateString = current.toISOString().split("T")[0];
         marks[dateString] = {
           selected: true,
@@ -95,7 +96,7 @@ const DateModal: React.FC<DateModalProps> = ({
           selectedColor: colors.primary,
           selectedTextColor: "#fff",
         };
-        current.setDate(current.getDate() + 1); // Passer au jour suivant
+        current.setUTCDate(current.getUTCDate() + 1);
       }
     } else {
       const dateString = currentDate.toISOString().split("T")[0];
