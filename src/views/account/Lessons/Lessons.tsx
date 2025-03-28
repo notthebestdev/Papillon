@@ -6,7 +6,7 @@ import { useCurrentAccount } from "@/stores/account";
 import { useTimetableStore } from "@/stores/timetable";
 import { getWeekFrequency, updateTimetableForWeekInCache } from "@/services/timetable";
 import { Page } from "./Atoms/Page";
-import LessonsDateModal from "../../../components/Global/DateModal";
+import DateModal from "../../../components/Global/DateModal";
 import { dateToEpochWeekNumber } from "@/utils/epochWeekNumber";
 
 import * as StoreReview from "expo-store-review";
@@ -470,7 +470,7 @@ const Lessons: Screen<"Lessons"> = ({ route, navigation }) => {
         onEndReachedThreshold={0.5}
       />
 
-      <LessonsDateModal
+      <DateModal
         showDatePicker={showDatePicker}
         setShowDatePicker={setShowDatePicker}
         currentDate={pickerDate}
