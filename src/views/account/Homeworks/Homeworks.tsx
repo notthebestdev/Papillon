@@ -1,4 +1,4 @@
-import { NativeItem, NativeList, NativeListHeader, NativeText } from "@/components/Global/NativeComponents";
+import { NativeList, NativeListHeader } from "@/components/Global/NativeComponents";
 import { useCurrentAccount } from "@/stores/account";
 import { useHomeworkStore } from "@/stores/homework";
 import { useTheme } from "@react-navigation/native";
@@ -13,14 +13,14 @@ import {
   StyleSheet,
   TextInput,
   ListRenderItem,
-  Pressable
+  Pressable,
+  TouchableOpacity
 } from "react-native";
 import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
 
 import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { Book, CheckSquare, ChevronLeft, ChevronRight, CircleDashed, Plus, Search, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -33,7 +33,7 @@ import * as Haptics from "expo-haptics";
 import MissingItem from "@/components/Global/MissingItem";
 import { PapillonModernHeader } from "@/components/Global/PapillonModernHeader";
 import {Homework} from "@/services/shared/Homework";
-import {Account, AccountService} from "@/stores/account/types";
+import { AccountService} from "@/stores/account/types";
 import {Screen} from "@/router/helpers/types";
 import {NativeSyntheticEvent} from "react-native/Libraries/Types/CoreEventTypes";
 import {NativeScrollEvent, ScrollViewProps} from "react-native/Libraries/Components/ScrollView/ScrollView";
@@ -45,20 +45,7 @@ import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
 
 const MemoizedHomeworkItem = React.memo(HomeworkItem);
-const MemoizedNativeItem = React.memo(NativeItem);
 const MemoizedNativeList = React.memo(NativeList);
-const MemoizedNativeText = React.memo(NativeText);
-
-type HomeworksPageProps = {
-  index: number;
-  isActive: boolean;
-  loaded: boolean;
-  homeworks: Record<number, Homework[]>;
-  account: Account;
-  updateHomeworks: () => Promise<void>;
-  loading: boolean;
-  getDayName: (date: string | number | Date) => string;
-};
 
 const formatDate = (date: string | number | Date): string => {
   return new Date(date).toLocaleDateString("fr-FR", {
