@@ -40,7 +40,7 @@ import { getMenu } from "@/services/menu";
 import type { FoodAllergen, FoodLabel, Menu as PawnoteMenu } from "pawnote";
 import { PapillonHeaderSelector } from "@/components/Global/PapillonModernHeader";
 import AnimatedNumber from "@/components/Global/AnimatedNumber";
-import { LessonsDateModal } from "../Lessons/LessonsHeader";
+import { LessonsDateModal } from "../../../components/Global/DateModal";
 import { BookingTerminal, BookingDay } from "@/services/shared/Booking";
 import { bookDayFromExternal, getBookingsAvailableFromExternal } from "@/services/booking";
 import InsetsBottomView from "@/components/Global/InsetsBottomView";
