@@ -15,7 +15,7 @@ import {
   Pressable,
   TouchableOpacity
 } from "react-native";
-import { dateToEpochWeekNumber, epochWNToDate } from "@/utils/epochWeekNumber";
+import { dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
 
 import * as StoreReview from "expo-store-review";
 
@@ -48,6 +48,7 @@ import { hasFeatureAccountSetup } from "@/utils/multiservice";
 import { MultiServiceFeature } from "@/stores/multiService/types";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const MemoizedHomeworkItem = React.memo(HomeworkItem);
 const MemoizedNativeList = React.memo(NativeList);
@@ -86,6 +87,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
 
   const [selectedWeek, setSelectedWeek] = useState(currentWeek);
 
+  const [showDatePickerWeek, setShowDatePickerWeek] = useState(false);
   const [hideDone, setHideDone] = useState(false);
 
   const getItemLayout = useCallback((_: any, index: number) => ({
@@ -341,6 +343,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         >
           <PressableScale
             style={[styles.weekPickerContainer]}
+            onPress={() => setShowDatePickerWeek(true)}
           >
             <Reanimated.View
               layout={animPapillon(LinearTransition)}
@@ -467,6 +470,31 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {showDatePickerWeek && (
+          <DateTimePicker
+            value={weekNumberToMiddleDate(selectedWeek)}
+            mode="date"
+            display="default"
+            onChange={(_event, selectedDate) => {
+              setShowDatePickerWeek(false);
+              if (selectedDate) {
+                selectedDate.setUTCHours(1, 0, 0, 0);
+
+                const weekNumber = dateToEpochWeekNumber(selectedDate);
+                const index = data.findIndex((week) => week === weekNumber);
+                if (index !== -1) {
+                  flatListRef.current?.scrollToIndex({ index, animated: true });
+                  setSelectedWeek(weekNumber);
+
+                  setTimeout(async () => {
+                    await updateHomeworks(true, false, true);
+                  }, 500);
+                }
+              }
+            }}
+          />
+        )}
       </PapillonModernHeader>
 
       <AddHomeworkButton
