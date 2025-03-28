@@ -498,8 +498,8 @@ const AddHomeworkButton: React.FC<{ onPress: () => void, outsideNav: boolean }> 
     >
       <View
         style={{
-          width: 60,
-          height: 60,
+          width: 50,
+          height: 50,
           borderRadius: 30,
           backgroundColor: theme.colors.primary,
           justifyContent: "center",
