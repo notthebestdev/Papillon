@@ -13,20 +13,22 @@ import {
   StyleSheet,
   ListRenderItem,
   Pressable,
-  TouchableOpacity
+  TouchableOpacity,
+  TextInput
 } from "react-native";
 import { dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
 
 import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
-import { CheckSquare, Plus, WandSparkles } from "lucide-react-native";
+import { CheckSquare, Plus, Search, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
 import Reanimated, {
   FadeIn,
   FadeInUp,
+  FadeOut,
   FadeOutDown,
   FadeOutLeft,
   LinearTransition,
@@ -49,6 +51,7 @@ import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
 import DateModal from "@/components/Global/DateModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import ResponsiveTextInput from "@/components/FirstInstallation/ResponsiveTextInput";
 
 const MemoizedHomeworkItem = React.memo(HomeworkItem);
 const MemoizedNativeList = React.memo(NativeList);
@@ -137,6 +140,8 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
       });
   }, [account, selectedWeek, loadedWeeks]);
 
+  const [searchTerms, setSearchTerms] = useState("");
+
   const renderWeek: ListRenderItem<number> = useCallback(({ item }) => {
     const homeworksInWeek = [...(homeworks[item] ?? [])];
 
@@ -153,6 +158,38 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
         acc[day] = [curr];
       } else {
         acc[day].push(curr);
+      }
+
+      // filter homeworks by search terms
+      if (searchTerms.length > 0) {
+        acc[day] = acc[day].filter((homework) => {
+          const content = homework.content
+            .toLowerCase()
+            .trim()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          const subject = homework.subject
+            .toLowerCase()
+            .trim()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          return (
+            content.includes(
+              searchTerms
+                .toLowerCase()
+                .trim()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+            ) ||
+            subject.includes(
+              searchTerms
+                .toLowerCase()
+                .trim()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+            )
+          );
+        });
       }
 
       // if hideDone is enabled, filter out the done homeworks
@@ -300,8 +337,15 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
               width: "100%",
             }}
             layout={animPapillon(LinearTransition)}
+            key={searchTerms + hideDone}
           >
-            {hideDone ? (
+            {searchTerms.length > 0 ? (
+              <MissingItem
+                emoji="🔍"
+                title="Aucun résultat"
+                description="Aucun devoir ne correspond à ta recherche."
+              />
+            ) : hideDone ? (
               <MissingItem
                 emoji="🌴"
                 title="Il ne reste rien à faire"
@@ -326,6 +370,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     );
   }, [
     homeworks,
+    searchTerms,
     hideDone,
     updateHomeworks,
     navigation,
@@ -363,6 +408,8 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     const index = Math.round(nativeEvent.contentOffset.x / width);
     setSelectedWeek(data[index]);
   }, [width, data]);
+
+  const SearchRef: React.MutableRefObject<TextInput> = useRef(null) as any as React.MutableRefObject<TextInput>;
 
   return (
     <View>
@@ -474,12 +521,15 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
 
           <View
             style={{
+              flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: theme.colors.primary,
+              flex: 1,
+              backgroundColor: theme.colors.background + "ff",
               borderColor: theme.colors.border + "dd",
               borderWidth: 1,
               borderRadius: 800,
+              paddingHorizontal: 14,
               height: 40,
               width: 40,
               gap: 4,
@@ -487,18 +537,60 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.6,
               shadowRadius: 4,
+              maxWidth: "60%",
             }}
           >
-            <TouchableOpacity
-              onPress={() => navigation.navigate("SettingStack", { screen: "SettingsMagic" })}
-            >
-              <WandSparkles
+            <TouchableOpacity onPress={() => SearchRef.current?.focus()}>
+              <Search
                 size={20}
                 color={theme.colors.text}
                 strokeWidth={2.5}
-                opacity={1}
+                opacity={0.7}
               />
             </TouchableOpacity>
+
+            <Reanimated.View
+              layout={animPapillon(LinearTransition)}
+              style={{
+                flex: 1,
+                overflow: "hidden",
+                borderRadius: 80,
+              }}
+              entering={FadeIn.duration(250).delay(20)}
+              exiting={FadeOut.duration(100)}
+            >
+              <ResponsiveTextInput
+                placeholder={hideDone ? "Uniquement devoirs non terminés" : "Rechercher"}
+                value={searchTerms}
+                onChangeText={setSearchTerms}
+                placeholderTextColor={theme.colors.text + "80"}
+                style={{
+                  color: theme.colors.text,
+                  padding: 8,
+                  borderRadius: 80,
+                  fontFamily: "medium",
+                  fontSize: 16.5,
+                }}
+                ref={SearchRef}
+              />
+            </Reanimated.View>
+
+            {searchTerms.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchTerms("")}>
+                <Reanimated.View
+                  layout={animPapillon(LinearTransition)}
+                  entering={FadeIn.duration(100)}
+                  exiting={FadeOut.duration(100)}
+                >
+                  <X
+                    size={20}
+                    color={theme.colors.text}
+                    strokeWidth={2.5}
+                    opacity={0.7}
+                  />
+                </Reanimated.View>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
