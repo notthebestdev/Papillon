@@ -82,7 +82,9 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   }
   const firstDateEpoch = dateToEpochWeekNumber(firstDate);
 
-  const currentWeek = dateToEpochWeekNumber(new Date());
+  const currentWeek = new Date().getUTCDay() >= 5 || new Date().getUTCDay() === 0
+    ? dateToEpochWeekNumber(new Date()) + 1
+    : dateToEpochWeekNumber(new Date());
   const [data, setData] = useState(Array.from({ length: 100 }, (_, i) => currentWeek - 50 + i));
 
   const [selectedWeek, setSelectedWeek] = useState(currentWeek);
