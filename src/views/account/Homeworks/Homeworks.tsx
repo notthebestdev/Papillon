@@ -560,13 +560,13 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
               exiting={FadeOut.duration(100)}
             >
               <ResponsiveTextInput
-                placeholder={hideDone ? "Uniquement devoirs non terminés" : "Rechercher"}
+                placeholder={hideDone ? "Non terminés" : "Rechercher"}
                 value={searchTerms}
                 onChangeText={setSearchTerms}
                 placeholderTextColor={theme.colors.text + "80"}
                 style={{
                   color: theme.colors.text,
-                  padding: 8,
+                  padding: 7,
                   borderRadius: 80,
                   fontFamily: "medium",
                   fontSize: 16.5,
