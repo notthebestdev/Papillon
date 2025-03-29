@@ -206,6 +206,9 @@ const DateModal: React.FC<DateModalProps> = ({
             }}
             markedDates={markedDates}
             theme={{
+              textMonthFontWeight: "bold",
+              textDayFontWeight: "500",
+              textDayHeaderFontWeight: "500",
               backgroundColor: colors.card,
               calendarBackground: colors.card,
               textSectionTitleColor: colors.text,
