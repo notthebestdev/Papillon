@@ -45,15 +45,15 @@ LocaleConfig.locales["fr"] = {
     "Déc.",
   ],
   dayNames: [
+    "Dimanche",
     "Lundi",
     "Mardi",
     "Mercredi",
     "Jeudi",
     "Vendredi",
     "Samedi",
-    "Dimanche",
   ],
-  dayNamesShort: ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."],
+  dayNamesShort: ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."],
   today: "Aujourd'hui",
 };
 
@@ -219,6 +219,7 @@ const DateModal: React.FC<DateModalProps> = ({
               arrowColor: colors.primary,
               textDisabledColor: dark ? "#555" : "#ccc",
             }}
+            firstDay={1}
           />
         </Reanimated.View>
       </Reanimated.View>
