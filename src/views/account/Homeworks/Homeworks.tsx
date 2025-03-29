@@ -17,7 +17,6 @@ import {
 } from "react-native";
 import { dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
 
-import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
 import { CheckSquare, Plus, WandSparkles } from "lucide-react-native";
@@ -43,7 +42,6 @@ import { AccountService } from "@/stores/account/types";
 import { Screen } from "@/router/helpers/types";
 import { NativeSyntheticEvent } from "react-native/Libraries/Types/CoreEventTypes";
 import { NativeScrollEvent, ScrollViewProps } from "react-native/Libraries/Components/ScrollView/ScrollView";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { hasFeatureAccountSetup } from "@/utils/multiservice";
 import { MultiServiceFeature } from "@/stores/multiService/types";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -144,7 +142,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
       (a, b) => new Date(a.due).getTime() - new Date(b.due).getTime()
     );
 
-    const groupedHomework = sortedHomework.reduce((acc, curr) => {
+    let groupedHomework = sortedHomework.reduce((acc, curr) => {
       const dayName = getDayName(curr.due);
       const formattedDate = formatDate(curr.due);
       const day = `${dayName} ${formattedDate}`;
@@ -176,36 +174,34 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
       return acc;
     }, {} as Record<string, Homework[]>);
 
-    const askForReview = async () => {
-      StoreReview.isAvailableAsync().then((available) => {
-        if (available) {
-          StoreReview.requestReview();
-        }
-      });
-    };
+    const isCurrentWeek = item === currentWeek;
+    if (isCurrentWeek) {
+      const today = new Date().getUTCDay();
+      const daysOfWeek = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-    const countCheckForReview = async () => {
-      AsyncStorage.getItem("review_checkedHomeworkCount").then((value) => {
-        if (value) {
-          if (parseInt(value) >= 5) {
-            AsyncStorage.setItem("review_checkedHomeworkCount", "0");
+      const todayName = daysOfWeek[today === 0 ? 6 : today - 1];
+      const todayKey = Object.keys(groupedHomework).find(day => day.startsWith(todayName));
+      const allDoneToday = todayKey
+        ? groupedHomework[todayKey].every(homework => homework.done)
+        : true;
 
-            setTimeout(() => {
-              AsyncStorage.getItem("review_given").then((value) => {
-                if (!value) {
-                  askForReview();
-                  AsyncStorage.setItem("review_given", "true");
-                }
-              });
-            }, 1000);
-          } else {
-            AsyncStorage.setItem("review_checkedHomeworkCount", (parseInt(value) + 1).toString());
+      if (allDoneToday) {
+        const reorderedDays = [
+          ...daysOfWeek.slice(today),
+          ...daysOfWeek.slice(0, today),
+        ];
+
+        const reorderedGroupedHomework: Record<string, Homework[]> = {};
+        reorderedDays.forEach(dayName => {
+          const dayKey = Object.keys(groupedHomework).find(day => day.startsWith(dayName));
+          if (dayKey) {
+            reorderedGroupedHomework[dayKey] = groupedHomework[dayKey];
           }
-        } else {
-          AsyncStorage.setItem("review_checkedHomeworkCount", "1");
-        }
-      });
-    };
+        });
+
+        groupedHomework = reorderedGroupedHomework;
+      }
+    }
 
     return (
       <ScrollView
@@ -254,7 +250,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                         await toggleHomeworkState(account, homework);
                       }
                       await updateHomeworks(true, false, false);
-                      await countCheckForReview();
+                      // await countCheckForReview();
                     }
                   }}
                 />
@@ -293,7 +289,6 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
           </Reanimated.View>
         }
       </ScrollView>
-
     );
   }, [
     homeworks,
