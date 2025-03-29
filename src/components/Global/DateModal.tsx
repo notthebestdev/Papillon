@@ -86,8 +86,6 @@ const DateModal: React.FC<DateModalProps> = ({
 
     if (isHomework && weekRange) {
       const { start: startOfWeek, end: endOfWeek } = weekRange;
-      startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 1);
-      endOfWeek.setUTCDate(endOfWeek.getUTCDate() - 1);
       let current = new Date(startOfWeek);
 
       while (current <= endOfWeek) {
