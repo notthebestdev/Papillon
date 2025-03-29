@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
 
+import * as StoreReview from "expo-store-review";
 
 import { PressableScale } from "react-native-pressable-scale";
 import { CheckSquare, Plus, WandSparkles } from "lucide-react-native";
@@ -47,6 +48,7 @@ import { MultiServiceFeature } from "@/stores/multiService/types";
 import { OfflineWarning, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import HomeworkItem from "./Atoms/Item";
 import DateModal from "@/components/Global/DateModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const MemoizedHomeworkItem = React.memo(HomeworkItem);
 const MemoizedNativeList = React.memo(NativeList);
@@ -203,6 +205,38 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
       }
     }
 
+    const askForReview = async () => {
+      StoreReview.isAvailableAsync().then((available) => {
+        if (available) {
+          StoreReview.requestReview();
+        }
+      });
+    };
+
+    const countCheckForReview = async () => {
+      AsyncStorage.getItem("review_checkedHomeworkCount").then((value) => {
+        if (value) {
+          if (parseInt(value) >= 5) {
+            AsyncStorage.setItem("review_checkedHomeworkCount", "0");
+
+            setTimeout(() => {
+              AsyncStorage.getItem("review_given").then((value) => {
+                if(!value) {
+                  askForReview();
+                  AsyncStorage.setItem("review_given", "true");
+                }
+              });
+            }, 1000);
+          }
+          else {
+            AsyncStorage.setItem("review_checkedHomeworkCount", (parseInt(value) + 1).toString());
+          }
+        } else {
+          AsyncStorage.setItem("review_checkedHomeworkCount", "1");
+        }
+      });
+    };
+
     return (
       <ScrollView
         style={{ width, height: "100%" }}
@@ -250,7 +284,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
                         await toggleHomeworkState(account, homework);
                       }
                       await updateHomeworks(true, false, false);
-                      // await countCheckForReview();
+                      await countCheckForReview();
                     }
                   }}
                 />
