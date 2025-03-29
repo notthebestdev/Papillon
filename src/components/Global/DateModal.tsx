@@ -13,6 +13,7 @@ import {
 } from "@/utils/ui/animations";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 import { dateToEpochWeekNumber, weekNumberToDateRange } from "@/utils/epochWeekNumber";
+import { MarkingProps } from "react-native-calendars/src/calendar/day/marking";
 
 LocaleConfig.locales["fr"] = {
   monthNames: [
@@ -81,20 +82,23 @@ const DateModal: React.FC<DateModalProps> = ({
     : null;
 
   const markedDates = React.useMemo(() => {
-    const marks: Record<string, any> = {};
+    const marks: Record<string, MarkingProps> = {};
 
     if (isHomework && weekRange) {
       const { start: startOfWeek, end: endOfWeek } = weekRange;
+      startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 1);
+      endOfWeek.setUTCDate(endOfWeek.getUTCDate() - 1);
       let current = new Date(startOfWeek);
-      current.setUTCDate(current.getUTCDate() - 1);
 
-      while (current < endOfWeek) {
+      while (current <= endOfWeek) {
         const dateString = current.toISOString().split("T")[0];
+        const verifyWeekRange = current.getTime() === startOfWeek.getTime() || current.getTime() === endOfWeek.getTime();
+
         marks[dateString] = {
-          selected: true,
-          marked: true,
-          selectedColor: colors.primary,
-          selectedTextColor: "#fff",
+          startingDay: current.getTime() === startOfWeek.getTime(),
+          endingDay: current.getTime() === endOfWeek.getTime(),
+          color: verifyWeekRange ? colors.primary : colors.primary + "70",
+          textColor: "#fff",
         };
         current.setUTCDate(current.getUTCDate() + 1);
       }
@@ -103,7 +107,6 @@ const DateModal: React.FC<DateModalProps> = ({
       marks[dateString] = {
         selected: true,
         disableTouchEvent: true,
-        selectedDotColor: "orange",
         selectedColor: colors.primary,
         selectedTextColor: "#fff",
       };
@@ -196,6 +199,7 @@ const DateModal: React.FC<DateModalProps> = ({
           </View>
 
           <Calendar
+            markingType={isHomework ? "period" : "dot"}
             current={currentDate.toISOString().split("T")[0]}
             onDayPress={(day: { dateString: string | number | Date }) => {
               setShowDatePicker(false);
