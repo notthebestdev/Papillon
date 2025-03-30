@@ -15,6 +15,7 @@ import { BookOpen, Calendar } from "lucide-react-native";
 import ButtonCta from "@/components/FirstInstallation/ButtonCta";
 import { dateToEpochWeekNumber } from "@/utils/epochWeekNumber";
 import { Homework } from "@/services/shared/Homework";
+import HomeworkItem from "./Atoms/Item";
 
 
 const AddHomeworkScreen: Screen<"AddHomework"> = ({ route, navigation }) => {
@@ -41,11 +42,31 @@ const AddHomeworkScreen: Screen<"AddHomework"> = ({ route, navigation }) => {
       const homework = allHomeworks.find(hw => hw.id === route.params?.hwid);
       if (homework) {
         setSelectedPretty(localSubjects[homework.subject]);
-        setIdHomework(Number(homework.id));
+        setIdHomework(parseInt(homework.id));
         setContentHomework(homework.content);
         setDateHomework(homework.due);
         setCurrentHw(homework);
       }
+    } else {
+      let createId: number = Math.floor(Math.random() * 100000 + 1);
+      let idAlreadyExist = useHomeworkStore
+        .getState()
+        .existsHomework(
+          dateToEpochWeekNumber(new Date(dateHomework)),
+          String(createId)
+        );
+
+      while (idAlreadyExist) {
+        createId = Math.floor(Math.random() * 100000 + 1);
+        idAlreadyExist = useHomeworkStore
+          .getState()
+          .existsHomework(
+            dateToEpochWeekNumber(new Date(dateHomework)),
+            String(createId)
+          );
+      }
+
+      setIdHomework(createId);
     }
   }, [route.params?.hwid]);
 
@@ -127,6 +148,33 @@ const AddHomeworkScreen: Screen<"AddHomework"> = ({ route, navigation }) => {
       paddingHorizontal: 12
     }}>
       <NativeList inline>
+        <NativeItem>
+          <NativeText variant="subtitle" numberOfLines={1}>
+            Aperçu
+          </NativeText>
+          <View style={{ marginHorizontal: -20, marginTop: 5, marginBottom: -10 }}>
+            <HomeworkItem
+              homework={{
+                attachments: [],
+                color: selectedPretty.color,
+                content: contentHomework ?? "Écris le contenu du devoir juste en-dessous",
+                done: false,
+                due: dateHomework,
+                id: String(idHomework),
+                personalizate: true,
+                subject: selectedPretty.pretty,
+                exam: false,
+              }}
+              index={idHomework}
+              key={idHomework}
+              // @ts-expect-error
+              navigation={navigation}
+              onDonePressHandler={() => undefined}
+              total={1}
+            />
+          </View>
+        </NativeItem>
+
         <NativeItem
           icon={<BookOpen size={22} strokeWidth={2} />}
           trailing={
@@ -217,8 +265,12 @@ const AddHomeworkScreen: Screen<"AddHomework"> = ({ route, navigation }) => {
                 onChange={(_event, selectedDate) => {
                   setShowDatePicker(false);
                   if (selectedDate) {
-                    selectedDate.setHours(0, 0, 0, 0);
-                    setDateHomework(selectedDate.getTime());
+                    const dateSelected = Date.UTC(
+                      selectedDate.getFullYear(),
+                      selectedDate.getMonth(),
+                      selectedDate.getDate(),
+                    );
+                    setDateHomework(dateSelected);
                   }
                 }}
               />
