@@ -216,30 +216,47 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
     const isCurrentWeek = item === currentWeek;
     if (isCurrentWeek) {
       const today = new Date().getUTCDay();
-      const daysOfWeek = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+      const daysOfWeek = [
+        "Lundi",
+        "Mardi",
+        "Mercredi",
+        "Jeudi",
+        "Vendredi",
+        "Samedi",
+        "Dimanche",
+      ];
 
-      const todayName = daysOfWeek[today === 0 ? 6 : today - 1];
-      const todayKey = Object.keys(groupedHomework).find(day => day.startsWith(todayName));
-      const allDoneToday = todayKey
-        ? groupedHomework[todayKey].every(homework => homework.done)
-        : true;
+      const reorderedDays = [
+        ...daysOfWeek.slice(today),
+        ...daysOfWeek.slice(0, today),
+      ];
 
-      if (allDoneToday) {
-        const reorderedDays = [
-          ...daysOfWeek.slice(today),
-          ...daysOfWeek.slice(0, today),
-        ];
+      const reorderedGroupedHomework: Record<string, Homework[]> = {};
+      const completedDays: string[] = [];
 
-        const reorderedGroupedHomework: Record<string, Homework[]> = {};
-        reorderedDays.forEach(dayName => {
-          const dayKey = Object.keys(groupedHomework).find(day => day.startsWith(dayName));
-          if (dayKey) {
-            reorderedGroupedHomework[dayKey] = groupedHomework[dayKey];
-          }
-        });
+      Object.keys(groupedHomework).forEach((day) => {
+        const allDone = groupedHomework[day].every(
+          (homework) => homework.done
+        );
+        if (allDone) {
+          completedDays.push(day);
+        }
+      });
 
-        groupedHomework = reorderedGroupedHomework;
-      }
+      reorderedDays.forEach((dayName) => {
+        const dayKey = Object.keys(groupedHomework).find((day) =>
+          day.startsWith(dayName)
+        );
+        if (dayKey && !completedDays.includes(dayKey)) {
+          reorderedGroupedHomework[dayKey] = groupedHomework[dayKey];
+        }
+      });
+
+      completedDays.forEach((dayKey) => {
+        reorderedGroupedHomework[dayKey] = groupedHomework[dayKey];
+      });
+
+      groupedHomework = reorderedGroupedHomework;
     }
 
     const askForReview = async () => {
