@@ -80,12 +80,15 @@ const DateModal: React.FC<DateModalProps> = ({
   const weekRange = isHomework
     ? weekNumberToDateRange(dateToEpochWeekNumber(currentDate))
     : null;
+  const { start: startOfWeek, end: endOfWeek } = weekRange ?? {
+    start: new Date(currentDate),
+    end: new Date(currentDate),
+  };
 
   const markedDates = React.useMemo(() => {
     const marks: Record<string, MarkingProps> = {};
 
     if (isHomework && weekRange) {
-      const { start: startOfWeek, end: endOfWeek } = weekRange;
       let current = new Date(startOfWeek);
 
       while (current <= endOfWeek) {
@@ -164,7 +167,7 @@ const DateModal: React.FC<DateModalProps> = ({
                 color: "#ffffff99",
               }}
             >
-              Sélection de la date
+              Sélection de la {isHomework ? "semaine" : "date"}
             </Text>
             <Text
               style={{
@@ -173,11 +176,28 @@ const DateModal: React.FC<DateModalProps> = ({
                 color: "#fff",
               }}
             >
-              {new Date(currentDate).toLocaleDateString("fr-FR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
+              {isHomework ? (
+                <>
+                  Du{" "}
+                  {new Date(startOfWeek).toLocaleDateString("fr-FR", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "2-digit",
+                  })}{" "}
+                  au{" "}
+                  {new Date(endOfWeek).toLocaleDateString("fr-FR", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "2-digit",
+                  })}
+                </>
+              ) : (
+                new Date(currentDate).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })
+              )}
             </Text>
 
             <TouchableOpacity
