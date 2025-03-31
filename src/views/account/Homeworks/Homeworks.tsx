@@ -1,7 +1,7 @@
 import { NativeList, NativeListHeader } from "@/components/Global/NativeComponents";
 import { useCurrentAccount } from "@/stores/account";
 import { useHomeworkStore } from "@/stores/homework";
-import { useTheme } from "@react-navigation/native";
+import { usePapillonTheme as useTheme } from "@/utils/ui/theme";
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import { toggleHomeworkState, updateHomeworkForWeekInCache } from "@/services/homework";
 import {
@@ -386,6 +386,8 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
             )}
           </Reanimated.View>
         }
+
+        <View style={{ height: 82 }} />
       </ScrollView>
     );
   }, [
@@ -642,7 +644,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
 
       <AddHomeworkButton
         onPress={() => navigation.navigate("AddHomework", {})}
-        outsideNav={route.params?.outsideNav ?? true}
+        outsideNav={route.params?.outsideNav ?? false}
       />
 
       <FlatList
