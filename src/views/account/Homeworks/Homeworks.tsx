@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   TextInput
 } from "react-native";
-import { dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
+import { calculateWeekNumber, dateToEpochWeekNumber, epochWNToDate, weekNumberToMiddleDate } from "@/utils/epochWeekNumber";
 
 import * as StoreReview from "expo-store-review";
 
@@ -79,9 +79,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   // @ts-expect-error
   let firstDate = account?.instance?.instance?.firstDate || null;
   if (!firstDate) {
-    firstDate = new Date();
-    firstDate.setUTCMonth(8);
-    firstDate.setUTCDate(1);
+    firstDate = new Date(Date.UTC(new Date().getFullYear(), 8, 1));
   }
   const firstDateEpoch = dateToEpochWeekNumber(firstDate);
 
@@ -104,8 +102,8 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
   const keyExtractor = useCallback((item: any) => item.toString(), []);
 
   const getDayName = (date: string | number | Date): string => {
-    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-    return days[new Date(date).getUTCDay()];
+    const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    return days[new Date(date).getDay()];
   };
 
   const [loading, setLoading] = useState(false);
@@ -474,7 +472,7 @@ const WeekView: Screen<"Homeworks"> = ({ route, navigation }) => {
 
                 <Reanimated.View layout={animPapillon(LinearTransition)}>
                   <AnimatedNumber
-                    value={((selectedWeek - firstDateEpoch % 52) % 52 + 1).toString()}
+                    value={calculateWeekNumber(epochWNToDate(selectedWeek))}
                     style={[
                       styles.weekPickerText,
                       styles.weekPickerTextNbr,
