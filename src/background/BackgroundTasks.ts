@@ -16,6 +16,15 @@ import { papillonNotify } from "./Notifications";
 let isBackgroundFetchRunning = false;
 const BACKGROUND_TASK_NAME = "background-fetch";
 
+const fetch = async (label: string, fn: () => Promise<any>) => {
+  try {
+    info(`▶️ Running background ${label}`, "BACKGROUND");
+    await fn();
+  } catch (e) {
+    error(`❌ ${label} fetch failed: ${e}`, "BACKGROUND");
+  }
+};
+
 const backgroundFetch = async () => {
   const notifee = (await import("@notifee/react-native")).default;
 
@@ -53,18 +62,12 @@ const backgroundFetch = async () => {
         account.personalization.notifications;
 
       if (notificationsTypesPermissions?.enabled) {
-        info("▶️ Running background News", "BACKGROUND");
-        await fetchNews();
-        info("▶️ Running background Homeworks", "BACKGROUND");
-        await fetchHomeworks();
-        info("▶️ Running background Grades", "BACKGROUND");
-        await fetchGrade();
-        info("▶️ Running background Lessons", "BACKGROUND");
-        await fetchLessons();
-        info("▶️ Running background Attendance", "BACKGROUND");
-        await fetchAttendance();
-        info("▶️ Running background Evaluation", "BACKGROUND");
-        await fetchEvaluation();
+        await fetch("News", fetchNews);
+        await fetch("Homeworks", fetchHomeworks);
+        await fetch("Grades", fetchGrade);
+        await fetch("Lessons", fetchLessons);
+        await fetch("Attendance", fetchAttendance);
+        await fetch("Evaluation", fetchEvaluation);
       }
     }
 
