@@ -14,6 +14,7 @@ import { fetchEvaluation } from "./data/Evaluation";
 import { papillonNotify } from "./Notifications";
 
 let isBackgroundFetchRunning = false;
+const BACKGROUND_TASK_NAME = "background-fetch";
 
 const backgroundFetch = async () => {
   const notifee = (await import("@notifee/react-native")).default;
@@ -80,13 +81,13 @@ const backgroundFetch = async () => {
   }
 };
 
-if (!isExpoGo()) TaskManager.defineTask("background-fetch", backgroundFetch);
+if (!isExpoGo()) TaskManager.defineTask(BACKGROUND_TASK_NAME, backgroundFetch);
 
 const unsetBackgroundFetch = async () =>
-  await BackgroundFetch.unregisterTaskAsync("background-fetch");
+  await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK_NAME);
 
 const setBackgroundFetch = async () =>
-  await BackgroundFetch.registerTaskAsync("background-fetch", {
+  await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
     minimumInterval: 60 * 15,
     stopOnTerminate: false,
     startOnBoot: true,
@@ -94,7 +95,7 @@ const setBackgroundFetch = async () =>
 
 const registerBackgroundTasks = async () => {
   const isRegistered = await TaskManager.isTaskRegisteredAsync(
-    "background-fetch"
+    BACKGROUND_TASK_NAME
   );
 
   if (isRegistered) {
