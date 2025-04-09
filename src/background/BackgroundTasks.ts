@@ -91,7 +91,7 @@ const unsetBackgroundFetch = async () =>
 
 const setBackgroundFetch = async () =>
   await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK_NAME, {
-    minimumInterval: 60 * 15,
+    minimumInterval: 60 * (__DEV__ ? 1 : 15),
     stopOnTerminate: false,
     startOnBoot: true,
   });
