@@ -13,45 +13,6 @@ import { fetchAttendance } from "./data/Attendance";
 import { fetchEvaluation } from "./data/Evaluation";
 import { papillonNotify } from "./Notifications";
 
-const notifeeEvent = async () => {
-  const notifee = (await import("@notifee/react-native")).default;
-  const EventType = (await import("@notifee/react-native")).EventType;
-
-  // Gestion des badges quand app en arrière-plan
-  notifee.onBackgroundEvent(async ({ type, detail }) => {
-    const { notification, pressAction } = detail;
-
-    switch (type) {
-      case EventType.ACTION_PRESS:
-        console.log(`[Notifee] Action press: ${pressAction?.id}`);
-
-      case EventType.DISMISSED:
-        let badgeCount = await notifee.getBadgeCount();
-        badgeCount--;
-        await notifee.setBadgeCount(badgeCount);
-        break;
-    }
-  });
-
-  // Gestion des badges quand app en premier plan
-  notifee.onForegroundEvent(async ({ type, detail }) => {
-    const { notification, pressAction } = detail;
-
-    switch (type) {
-      case EventType.ACTION_PRESS:
-        console.log(`[Notifee] Action press: ${pressAction?.id}`);
-
-      case EventType.DISMISSED:
-        let badgeCount = await notifee.getBadgeCount();
-        badgeCount--;
-        await notifee.setBadgeCount(badgeCount);
-        break;
-    }
-  });
-};
-
-if (!isExpoGo()) notifeeEvent();
-
 let isBackgroundFetchRunning = false;
 
 const backgroundFetch = async () => {
