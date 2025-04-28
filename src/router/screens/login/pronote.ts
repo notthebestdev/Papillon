@@ -57,7 +57,8 @@ export default [
   createScreen("PronoteReconnection", PronoteReconnection, {
     headerTitle: "",
     headerTransparent: false,
-    headerBackVisible: false
+    headerBackVisible: false,
+    presentation: "fullScreenModal",
   }),
   createScreen("PronoteV6Import", PronoteV6Import, {
     headerTitle: "Importer d'une ancienne version",
