@@ -10,6 +10,7 @@ import PronoteQRCode from "@/views/login/pronote/PronoteQRCode";
 import PronoteWebview from "@/views/login/pronote/PronoteWebview";
 import PronoteV6Import from "@/views/login/pronote/PronoteV6Import";
 import Pronote2FA_Auth from "@/views/login/pronote/Pronote2FA_Auth";
+import PronoteReconnection from "@/views/login/pronote/PronoteReconnection";
 
 
 export default [
@@ -52,6 +53,11 @@ export default [
     headerTitle: "",
     headerTransparent: true,
     headerBackVisible: true
+  }),
+  createScreen("PronoteReconnection", PronoteReconnection, {
+    headerTitle: "",
+    headerTransparent: false,
+    headerBackVisible: false
   }),
   createScreen("PronoteV6Import", PronoteV6Import, {
     headerTitle: "Importer d'une ancienne version",

@@ -40,9 +40,17 @@ export type RouteParameters = {
     latitude: number;
     hideDistance?: boolean;
   };
-  PronoteCredentials: { instanceURL: string; information: pronote.Instance };
+  PronoteCredentials: {
+    instanceURL: string;
+    information: pronote.Instance;
+  };
   PronoteManualURL?: { url?: string; method?: string };
   PronoteQRCode: undefined;
+  PronoteReconnection: {
+    instanceURL: string;
+    accountID: string;
+  };
+
   PronoteWebview: { instanceURL: string };
   PronoteV6Import: {
     data: {

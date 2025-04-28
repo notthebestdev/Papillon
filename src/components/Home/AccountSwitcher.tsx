@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { usePapillonTheme as useTheme } from "@/utils/ui/theme";
-import { ChevronDown } from "lucide-react-native";
+import { ChevronDown, CircleAlert } from "lucide-react-native";
 import Reanimated, {
   interpolateColor,
   LinearTransition,
@@ -24,12 +24,14 @@ const AccountSwitcher = ({
   modalOpen = false,
   translationY,
   loading = false,
+  error,
 }: {
   small?: boolean;
   opened?: boolean;
   modalOpen?: boolean;
   translationY?: Reanimated.SharedValue<number>;
   loading?: boolean;
+  error?: boolean;
 }) => {
   const theme = useTheme();
   const { colors } = theme;
@@ -126,7 +128,7 @@ const AccountSwitcher = ({
                 ? account.studentName.first + (shouldHideName ? "" : " " + account.studentName.last)
                 : "Mon compte"}
             </Reanimated.Text>
-            {loading && (
+            {loading && !error && (
               <PapillonSpinner
                 size={20}
                 strokeWidth={3}
@@ -134,6 +136,13 @@ const AccountSwitcher = ({
                 animated
                 entering={animPapillon(ZoomIn)}
                 exiting={animPapillon(ZoomOut)}
+              />
+            )}
+            {error && (
+              <CircleAlert
+                size={20}
+                strokeWidth={2.3}
+                color={"#BE0B00"}
               />
             )}
             <Reanimated.View layout={animPapillon(LinearTransition)}>

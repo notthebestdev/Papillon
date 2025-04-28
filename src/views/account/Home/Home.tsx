@@ -51,7 +51,7 @@ import { AnimatedScrollView } from "react-native-reanimated/lib/typescript/reani
 import useScreenDimensions from "@/hooks/useScreenDimensions";
 import useSoundHapticsWrapper from "@/utils/native/playSoundHaptics";
 import { useAlert } from "@/providers/AlertProvider";
-import { ArrowLeft, Menu, Plus } from "lucide-react-native";
+import { ArrowLeft, Menu, Pin, Plus, RotateCcw } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { HEADERS_IMAGE } from "./Modal/CustomizeHeader";
 import MaskedView from "@react-native-masked-view/masked-view";
@@ -95,6 +95,33 @@ const Home: Screen<"HomeScreen"> = ({ navigation }) => {
 
     Linking.addEventListener("url", handleUrl);
   }, [accounts, navigation]);
+
+  useEffect(() => {
+    if (account.error) {
+      showAlert({
+        title: "Erreur de compte",
+        message: "Une erreur est survenue avec votre compte. Veuillez vous reconnecter.",
+        icon: <Pin />,
+        actions: [
+          {
+            title: "Annuler",
+            icon: <ArrowLeft />,
+          },
+          {
+            title: "Réessayer",
+            icon: <RotateCcw />,
+            onPress: () => {
+              navigation.navigate("PronoteReconnection", {
+                instanceURL: account.authentication.url,
+                accountID: account.localID,
+              });
+            },
+            primary: true,
+          }
+        ],
+      });
+    }
+  }, []);
 
   const manageIzlyLogin = (url: string) => {
     if (url) {
@@ -210,6 +237,7 @@ const Home: Screen<"HomeScreen"> = ({ navigation }) => {
             translationY={scrollOffset}
             modalOpen={modalOpen}
             loading={!account.instance}
+            error={account.error}
           />
         </ContextMenu>
       )}

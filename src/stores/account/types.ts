@@ -157,8 +157,8 @@ interface BaseExternalAccount {
 
 export interface PronoteAccount extends BaseAccount {
   service: AccountService.Pronote;
+  error?: boolean;
   instance?: pronote.SessionHandle;
-
   authentication: pronote.RefreshInformation & {
     deviceUUID: string;
   };
@@ -171,6 +171,7 @@ export interface PronoteAccount extends BaseAccount {
 export interface EcoleDirecteAccount extends BaseAccount {
   profilePictureURL: string;
   service: AccountService.EcoleDirecte;
+  error?: boolean;
   instance: {};
   authentication: {
     session: PawdirecteSession
@@ -184,6 +185,7 @@ export interface EcoleDirecteAccount extends BaseAccount {
 
 export interface SkolengoAccount extends BaseAccount {
   service: AccountService.Skolengo;
+  error?: boolean;
   instance?: ScolengoAPI.Skolengo;
   authentication: SkolengoAuthConfig;
   userInfo: ScolengoAPIUser;
@@ -195,6 +197,7 @@ export interface SkolengoAccount extends BaseAccount {
 
 export interface MultiAccount extends BaseAccount {
   service: AccountService.Multi
+  error?: boolean;
   instance?: MultiAPI.Multi
   authentication: {
     instanceURL: string
@@ -208,6 +211,7 @@ export interface MultiAccount extends BaseAccount {
 
 export interface LocalAccount extends BaseAccount {
   service: AccountService.Local;
+  error?: boolean;
 
   // Both are useless for local accounts.
   instance: undefined | Record<string, unknown>;
@@ -231,6 +235,7 @@ export interface LocalAccount extends BaseAccount {
 
 export interface PapillonMultiServiceSpace extends BaseAccount {
   service: AccountService.PapillonMultiService
+  error?: boolean;
   instance: null | string
   authentication: null
   identityProvider: {
