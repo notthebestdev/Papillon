@@ -12,6 +12,7 @@ import { fetchLessons } from "./data/Lessons";
 import { fetchAttendance } from "./data/Attendance";
 import { fetchEvaluation } from "./data/Evaluation";
 import { papillonNotify } from "./Notifications";
+import { useFlagsStore } from "@/stores/flags";
 
 let isBackgroundFetchRunning = false;
 const BACKGROUND_TASK_NAME = "background-fetch";
@@ -26,6 +27,12 @@ const fetch = async (label: string, fn: () => Promise<any>) => {
 };
 
 const backgroundFetch = async () => {
+  const disableBackgroundTasks = useFlagsStore.getState().defined("disablebackgroundtasks");
+  if (disableBackgroundTasks) {
+    warn("⚠️ Background fetch disabled by flags.", "BACKGROUND");
+    return BackgroundFetchResult.NoData;
+  }
+
   const notifee = (await import("@notifee/react-native")).default;
 
   if (isBackgroundFetchRunning) {
@@ -97,6 +104,17 @@ const setBackgroundFetch = async () =>
   });
 
 const registerBackgroundTasks = async () => {
+  const disableBackgroundTasks = useFlagsStore.getState().defined("disablebackgroundtasks");
+  if (disableBackgroundTasks) {
+    warn("⚠️ Background tasks registration skipped because disabled by flag.", "BACKGROUND");
+    await unsetBackgroundFetch()
+      .then(() => log("✅ Background task unregistered (flag)", "BACKGROUND"))
+      .catch((ERRfatal) =>
+        error(`❌ Failed to unregister background task (flag): ${ERRfatal}`, "BACKGROUND")
+      );
+    return;
+  }
+
   const isRegistered = await TaskManager.isTaskRegisteredAsync(
     BACKGROUND_TASK_NAME
   );
