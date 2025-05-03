@@ -120,7 +120,7 @@ const registerBackgroundTasks = async () => {
   );
 
   if (isRegistered) {
-    warn(
+    info(
       "⚠️ Background task already registered. Unregister background task...",
       "BACKGROUND"
     );
